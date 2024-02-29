@@ -330,7 +330,7 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 name = "ruff"
 version = "0.3.0"
 description = "An extremely fast Python linter and code formatter, written in Rust."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -447,4 +447,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1"
-content-hash = "5de87dd48d0ebe16375676fcf8d54c0521b1c6fcbd6b1c636fd882f2887bac59"
+content-hash = "15d3f234d2728f0ece8ab1b672176bea212a0aed3f51f9728e8051be2debf8ea"

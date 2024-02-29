@@ -1,6 +1,6 @@
 # Inspired by: https://blog.mathieu-leplatre.info/tips-for-your-makefile-with-python.html
 
-PYMODULE := DRL_Navigation_ROS2
+PYMODULE := drl_navigation_ros2
 TESTS := tests
 INSTALL_STAMP := .install.stamp
 POETRY := $(shell command -v poetry 2> /dev/null)
