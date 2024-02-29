@@ -1,6 +1,6 @@
 """Stub unit test file."""
 
-from project_name.lib import adder
+from DRL_Navigation_ROS2.lib import adder
 
 
 def test_stub() -> None:

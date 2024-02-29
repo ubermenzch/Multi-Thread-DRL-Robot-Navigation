@@ -18,7 +18,7 @@ version = "0.1.0"
 description = "A template Poetry project structure."
 
 packages = [
-    { include = "project_name", from = "src" },
+    { include = "DRL_Navigation_ROS2", from = "src" },
 ]
 
 authors = ["Lari Liuhamo <lari.liuhamo+pypi@gmail.com>",]
