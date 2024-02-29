@@ -13,7 +13,7 @@ omit = [
 
 
 [tool.poetry]
-name = "project-name"
+name = "DRL_Navigation_ROS2"
 version = "0.1.0"
 description = "A template Poetry project structure."
 
@@ -28,9 +28,8 @@ include = ["CHANGELOG.md", "LICENSE", "py.typed",]
 license = "MIT"
 readme = "README.md"
 
-homepage = "https://pypi.org/project/project-name/"
-repository = "https://github.com/Diapolo10/project-name"
-documentation = "https://github.com/Diapolo10/project-name/tree/main/docs"
+homepage = "https://github.com/reiniscimurs/DRL_Navigation_ROS2"
+repository = "https://github.com/reiniscimurs/DRL_Navigation_ROS2"
 
 keywords = [
     "python3",
@@ -78,8 +77,8 @@ tox-gh-actions = "^3.2.0"
 
 
 [tool.poetry.urls]
-"Tracker" = "https://github.com/Diapolo10/project-name/issues"
-"Changelog" = "https://github.com/Diapolo10/project-name/blob/main/CHANGELOG.md"
+"Tracker" = "https://github.com/reiniscimurs/DRL_Navigation_ROS2/issues"
+"Changelog" = "https://github.com/reiniscimurs/DRL_Navigation_ROS2/blob/main/CHANGELOG.md"
 
 
 [tool.pytest.ini_options]
