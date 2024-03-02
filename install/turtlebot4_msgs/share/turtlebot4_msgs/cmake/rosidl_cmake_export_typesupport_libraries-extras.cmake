@@ -1,0 +1,1 @@
+/home/reinis/DRL_Navigation_ROS2/build/turtlebot4_msgs/rosidl_cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake

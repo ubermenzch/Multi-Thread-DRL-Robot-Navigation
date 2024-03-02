@@ -1,0 +1,1 @@
+/home/reinis/DRL_Navigation_ROS2/build/turtlebot4_node/ament_cmake_core/turtlebot4_nodeConfig-version.cmake
