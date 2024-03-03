@@ -1,6 +1,6 @@
 """Stub unit test file."""
 
-from drl_avigation_ros2.lib import adder
+from drl_navigation_ros2.lib import adder
 
 
 def test_stub() -> None:
