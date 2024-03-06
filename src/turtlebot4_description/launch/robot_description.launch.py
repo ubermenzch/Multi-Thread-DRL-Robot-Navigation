@@ -15,14 +15,15 @@
 # @author Roni Kreinin (rkreinin@clearpathrobotics.com)
 
 
-from ament_index_python.packages import get_package_share_directory
-
+import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import Command, PathJoinSubstitution
-from launch.substitutions.launch_configuration import LaunchConfiguration
-
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition, UnlessCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from launch.actions import ExecuteProcess
 
 
 ARGUMENTS = [
@@ -36,25 +37,102 @@ ARGUMENTS = [
 
 
 def generate_launch_description():
-    pkg_turtlebot4_description = get_package_share_directory('turtlebot4_description')
-    xacro_file = PathJoinSubstitution([pkg_turtlebot4_description,
-                                       'urdf',
-                                       LaunchConfiguration('model'),
-                                       'turtlebot4.urdf.xacro'])
+    # pkg_turtlebot4_description = get_package_share_directory('turtlebot4_description')
 
+    # xacro_file = PathJoinSubstitution([pkg_turtlebot4_description,
+    #                                    'urdf',
+    #                                    LaunchConfiguration('model'),
+    #                                    'turtlebot4.urdf.xacro'])
+    # xacro_file = "/home/reinis/DRL_Navigation_ROS2/src/turtlebot4_description/urdf/lite/turtlebot4.urdf.xacro"
+    # robot_state_publisher = Node(
+    #     package='robot_state_publisher',
+    #     executable='robot_state_publisher',
+    #     name='robot_state_publisher',
+    #     output='screen',
+    #     parameters=[
+    #         {'use_sim_time': LaunchConfiguration('use_sim_time')},
+    #         {'robot_description': Command(['xacro', ' ', xacro_file, ' ', 'gazebo:=ignition'])},
+    #     ],
+    # )
+    #
+    # world_path = "/home/reinis/DRL_Navigation_ROS2/src/drl_navigation_ros2/assets/TD3.world"
+    #
+    # declare_simulator_cmd = DeclareLaunchArgument(
+    #     name='headless',
+    #     default_value='False',
+    #     description='Whether to execute gzclient')
+    #
+    # declare_use_sim_time_cmd = DeclareLaunchArgument(
+    #     name='use_sim_time',
+    #     default_value='true',
+    #     description='Use simulation (Gazebo) clock if true')
+    #
+    # declare_use_simulator_cmd = DeclareLaunchArgument(
+    #     name='use_simulator',
+    #     default_value='True',
+    #     description='Whether to start the simulator')
+    #
+    # declare_world_cmd = DeclareLaunchArgument(
+    #     name='world',
+    #     default_value=world_path,
+    #     description='Full path to the world model file to load')
+    #
+    #
+    # # Create the launch description and populate
+    # ld = LaunchDescription()
+    #
+    # # Declare the launch options
+    # ld.add_action(declare_simulator_cmd)
+    # ld.add_action(declare_use_sim_time_cmd)
+    # ld.add_action(declare_use_simulator_cmd)
+    # ld.add_action(declare_world_cmd)
+    #
+    # # Define LaunchDescription variable
+    # ld = LaunchDescription(ARGUMENTS)
+    # # Add nodes to LaunchDescription
+    # ld.add_action(robot_state_publisher)
+    # return ld
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    robot_name = 'rrbot_description'
+    world_file_name = 'empty.world'
+
+    world = "/home/reinis/DRL_Navigation_ROS2/src/drl_navigation_ros2/assets/TD3.world"
+
+    urdf = "/home/reinis/DRL_Navigation_ROS2/src/turtlebot4_description/urdf/lite/turtlebot4.urdf.xacro"
+
+    # xml = open(urdf, 'r').read()
+    #
+    # xml = xml.replace('"', '\\"')
+
+    # swpan_args = '{name: \"my_robot\", xml: \"' + xml + '\" }'
+
+    xacro_file = "/home/reinis/DRL_Navigation_ROS2/src/turtlebot4_description/urdf/lite/turtlebot4.urdf.xacro"
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         name='robot_state_publisher',
         output='screen',
         parameters=[
-            {'use_sim_time': LaunchConfiguration('use_sim_time')},
+            {'use_sim_time': use_sim_time},
             {'robot_description': Command(['xacro', ' ', xacro_file, ' ', 'gazebo:=ignition'])},
         ],
     )
 
-    # Define LaunchDescription variable
-    ld = LaunchDescription(ARGUMENTS)
-    # Add nodes to LaunchDescription
+    ld = LaunchDescription([
+        ExecuteProcess(
+            cmd=['gazebo', '--verbose', world],
+            output='screen'),
+
+        ExecuteProcess(
+            cmd=['ros2', 'param', 'set', '/gazebo',
+                 'use_sim_time', use_sim_time],
+            output='screen'),
+
+        # ExecuteProcess(
+        #     cmd=['ros2', 'service', 'call', '/spawn_entity',
+        #          'gazebo_msgs/SpawnEntity', swpan_args],
+        #     output='screen'),
+    ])
+
     ld.add_action(robot_state_publisher)
     return ld

@@ -13,12 +13,12 @@ omit = [
 
 
 [tool.poetry]
-name = "DRL_Navigation_ROS2"
+name = "drl_navigation_ros2"
 version = "0.1.0"
 description = "A template Poetry project structure."
 
 packages = [
-    { include = "DRL_Navigation_ROS2", from = "src" },
+    { include = "drl_navigation_ros2", from = "src" },
 ]
 
 authors = ["Lari Liuhamo <lari.liuhamo+pypi@gmail.com>",]
