@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Poetry (DRL_Navigation_ROS2)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (DRL_Navigation_ROS2)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.9 (DRL_Navigation_ROS2)" project-jdk-type="Python SDK" />
 </project>

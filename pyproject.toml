@@ -53,10 +53,15 @@ classifiers = [
 python = "^3.9"
 ruff = "^0.4.0"
 catkin-pkg = "^1.0.0"
-empy = "4.1"
 lark = "^1.1.9"
-numpy = "1.24.4"
+numpy = "^1.24"
 pyyaml = "^6.0.1"
+matplotlib = "^3.8.4"
+pandas = "^2.2.2"
+pyqtgraph = "^0.13.5"
+pyqt5 = "5.14.1"
+torch = "^2.2.2"
+empy = "3.3.4"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -1,1 +1,0 @@
-/home/reinis/DRL_Navigation_ROS2/src/turtlebot4_description/launch/robot_description.launch.py
