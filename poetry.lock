@@ -1260,14 +1260,14 @@ files = [
 
 [[package]]
 name = "pyqtgraph"
-version = "0.13.5"
+version = "0.13.6"
 description = "Scientific Graphics and GUI Library for Python"
 category = "main"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyqtgraph-0.13.5-py3-none-any.whl", hash = "sha256:11af5c4c2a04b86785e1d223d1f6814d289f23120f04a17878ef11d4ea8d21ce"},
-    {file = "pyqtgraph-0.13.5.tar.gz", hash = "sha256:e3b05a513da4a837055c0f8e26506f142478b2ebe9854085bf63faf84625623e"},
+    {file = "pyqtgraph-0.13.6-py3-none-any.whl", hash = "sha256:35740eb7e5908e490c6e06ef6ef15738dfba27ee35b0b0417638d515da6f9226"},
+    {file = "pyqtgraph-0.13.6.tar.gz", hash = "sha256:2397a2197e7ac66920329bf28fb346b038d85a351f8988ccc806ffb79d11573d"},
 ]
 
 [package.dependencies]
