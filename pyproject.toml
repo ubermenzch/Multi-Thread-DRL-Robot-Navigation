@@ -61,7 +61,7 @@ pandas = "^2.2.2"
 pyqtgraph = "^0.13.5"
 pyqt5 = "5.15.10"
 torch = "^2.2.2"
-empy = "3.3.4"
+empy = "4.1"
 
 
 [tool.poetry.group.dev.dependencies]
