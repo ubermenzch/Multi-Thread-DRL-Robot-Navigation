@@ -222,12 +222,12 @@ files = [
 
 [[package]]
 name = "empy"
-version = "3.3.4"
+version = "4.1"
 description = "A templating system for Python."
 optional = false
-python-versions = "*"
+python-versions = ">=2.3"
 files = [
-    {file = "empy-3.3.4.tar.gz", hash = "sha256:73ac49785b601479df4ea18a7c79bc1304a8a7c34c02b9472cf1206ae88f01b3"},
+    {file = "empy-4.1.tar.gz", hash = "sha256:9d712e97c1395859be13d2b45788c9186cd97f1c04dac510399130f328643367"},
 ]
 
 [[package]]
@@ -1628,4 +1628,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "c7decf0792864c4f3eea9819f532c51507307b7394882f1384525ca47f4ca005"
+content-hash = "fd257f969af8e92b4159aabaf82983fd7c93a1154ef79dd64c37405bd951f4ef"
