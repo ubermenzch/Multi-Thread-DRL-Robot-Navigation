@@ -59,9 +59,10 @@ pyyaml = "^6.0.1"
 matplotlib = "^3.8.4"
 pandas = "^2.2.2"
 pyqtgraph = "^0.13.5"
-pyqt5 = "5.15.10"
+pyqt5 = "=5.15.10"
+pyqt5-qt5 = "=5.15.2"
 torch = "^2.3.0"
-empy = "4.1"
+empy = "=3.3.4"
 
 
 [tool.poetry.group.dev.dependencies]

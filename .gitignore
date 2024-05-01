@@ -144,3 +144,5 @@ tests/reports
 
 # Ruff
 .ruff_cache
+/log/
+/install/
