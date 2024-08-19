@@ -63,6 +63,8 @@ pyqt5 = "=5.15.10"
 pyqt5-qt5 = "=5.15.2"
 torch = "^2.3.0"
 empy = "=3.3.4"
+squaternion = "^2023.9.2"
+tqdm = "^4.66.5"
 
 
 [tool.poetry.group.dev.dependencies]

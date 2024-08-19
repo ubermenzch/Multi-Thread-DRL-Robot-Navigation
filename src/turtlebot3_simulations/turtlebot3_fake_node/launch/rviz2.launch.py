@@ -23,16 +23,17 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     rviz_config_dir = os.path.join(
-        get_package_share_directory('turtlebot3_fake_node'),
-        'rviz',
-        'model.rviz'
+        get_package_share_directory("turtlebot3_fake_node"), "rviz", "model.rviz"
     )
 
-    return LaunchDescription([
-        Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            arguments=['-d', rviz_config_dir],
-            output='screen'),
-    ])
+    return LaunchDescription(
+        [
+            Node(
+                package="rviz2",
+                executable="rviz2",
+                name="rviz2",
+                arguments=["-d", rviz_config_dir],
+                output="screen",
+            ),
+        ]
+    )

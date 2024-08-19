@@ -53,15 +53,6 @@ set(EXEC_NAME "turtlebot3_drive")
 add_executable(${EXEC_NAME} src/turtlebot3_drive.cpp)
 ament_target_dependencies(${EXEC_NAME} ${dependencies})
 
-add_library(obstacle1 SHARED models/turtlebot3_drl_world/obstacle_plugin/obstacle1.cc)
-target_link_libraries(obstacle1 ${GAZEBO_LIBRARIES})
-
-add_library(obstacle2 SHARED models/turtlebot3_drl_world/obstacle_plugin/obstacle2.cc)
-target_link_libraries(obstacle2 ${GAZEBO_LIBRARIES})
-
-add_library(obstacles SHARED models/turtlebot3_drl_world/obstacle_plugin/obstacles.cc)
-target_link_libraries(obstacles ${GAZEBO_LIBRARIES})
-
 ################################################################################
 # Install
 ################################################################################
