@@ -48,9 +48,7 @@ class ROS_env:
             latest_orientation,
         ) = self.sensor_subscriber.get_latest_sensor()
 
-        distance, cos, sin, _ = self.get_dist_sincos(
-            latest_position, latest_orientation
-        )
+        distance, cos, sin, _ = self.get_dist_sincos(latest_position, latest_orientation)
         collision = self.check_collision(latest_scan)
         goal = self.check_target(distance, collision)
         action = [lin_velocity, ang_velocity]
@@ -61,9 +59,7 @@ class ROS_env:
     def reset(self):
         self.world_reset.reset_world()
         action = [0.0, 0.0]
-        self.cmd_vel_publisher.publish_cmd_vel(
-            linear_velocity=action[0], angular_velocity=action[1]
-        )
+        self.cmd_vel_publisher.publish_cmd_vel(linear_velocity=action[0], angular_velocity=action[1])
 
         self.element_positions = [
             [-2.93, 3.17],
@@ -91,23 +87,19 @@ class ROS_env:
 
         self.physics_client.unpause_physics()
         time.sleep(1)
-        latest_scan, distance, cos, sin, _, _, a, reward = self.step(
-            lin_velocity=0.0, ang_velocity=0.0
-        )
+        latest_scan, distance, cos, sin, _, _, a, reward = self.step(lin_velocity=0.0, ang_velocity=0.0)
         return latest_scan, distance, cos, sin, False, False, a, reward
 
     def set_target_position(self, robot_position):
         pos = False
         while not pos:
             x = np.clip(
-                robot_position[0]
-                + np.random.uniform(-self.target_dist, self.target_dist),
+                robot_position[0] + np.random.uniform(-self.target_dist, self.target_dist),
                 -4.0,
                 4.0,
             )
             y = np.clip(
-                robot_position[1]
-                + np.random.uniform(-self.target_dist, self.target_dist),
+                robot_position[1] + np.random.uniform(-self.target_dist, self.target_dist),
                 -4.0,
                 4.0,
             )

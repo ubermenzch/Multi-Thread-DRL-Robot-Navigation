@@ -27,7 +27,6 @@ class ReplayBuffer(object):
         return self.count
 
     def sample_batch(self, batch_size):
-
         if self.count < batch_size:
             batch = random.sample(self.buffer, self.count)
         else:
@@ -42,7 +41,6 @@ class ReplayBuffer(object):
         return s_batch, a_batch, r_batch, t_batch, s2_batch
 
     def return_buffer(self):
-
         s = np.array([_[0] for _ in self.buffer])
         a = np.array([_[1] for _ in self.buffer])
         r = np.array([_[2] for _ in self.buffer]).reshape(-1, 1)

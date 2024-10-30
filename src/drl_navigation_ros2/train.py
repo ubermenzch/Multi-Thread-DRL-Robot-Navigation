@@ -75,27 +75,18 @@ def main(args=None):
     else:
         replay_buffer = ReplayBuffer(buffer_size=5e3, random_seed=42)
 
-    latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
-        lin_velocity=0.0, ang_velocity=0.0
-    )
+    latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(lin_velocity=0.0, ang_velocity=0.0)
 
     while epoch < max_epochs:
-
-        state, terminal = model.prepare_state(
-            latest_scan, distance, cos, sin, collision, goal, a
-        )
+        state, terminal = model.prepare_state(latest_scan, distance, cos, sin, collision, goal, a)
         action = model.get_action(state, True)
-        action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(
-            -max_action, max_action
-        )
+        action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(-max_action, max_action)
         a_in = [(action[0] + 1) / 2, action[1]]
 
         latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
             lin_velocity=a_in[0], ang_velocity=a_in[1]
         )
-        next_state, terminal = model.prepare_state(
-            latest_scan, distance, cos, sin, collision, goal, a
-        )
+        next_state, terminal = model.prepare_state(latest_scan, distance, cos, sin, collision, goal, a)
         replay_buffer.add(state, action, reward, terminal, next_state)
 
         if terminal or steps == max_steps:
@@ -132,13 +123,9 @@ def eval(model, env, scenarios, epoch, max_steps):
     gl = 0
     for scenario in scenarios:
         count = 0
-        latest_scan, distance, cos, sin, collision, goal, a, reward = env.eval(
-            scenario=scenario
-        )
+        latest_scan, distance, cos, sin, collision, goal, a, reward = env.eval(scenario=scenario)
         while count < max_steps:
-            state, terminal = model.prepare_state(
-                latest_scan, distance, cos, sin, collision, goal, a
-            )
+            state, terminal = model.prepare_state(latest_scan, distance, cos, sin, collision, goal, a)
             if terminal:
                 break
             action = model.get_action(state, False)

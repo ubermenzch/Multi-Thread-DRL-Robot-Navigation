@@ -33,9 +33,7 @@ def generate_launch_description():
 
     print("urdf_file_name : {}".format(urdf_file_name))
 
-    urdf = os.path.join(
-        get_package_share_directory("turtlebot3_description"), "urdf", urdf_file_name
-    )
+    urdf = os.path.join(get_package_share_directory("turtlebot3_description"), "urdf", urdf_file_name)
 
     return LaunchDescription(
         [

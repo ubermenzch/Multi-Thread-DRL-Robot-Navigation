@@ -64,7 +64,6 @@ class HCM(object):
         pass
 
     def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
-
         latest_scan = np.array(latest_scan)
 
         inf_mask = np.isinf(latest_scan)

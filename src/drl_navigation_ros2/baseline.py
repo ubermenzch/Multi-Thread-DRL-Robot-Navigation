@@ -19,19 +19,12 @@ def main(args=None):
 
     model = HCM(state_dim=state_dim, max_action=max_action, save_samples=True)
     ros = ROS_env()
-    latest_scan, distance, cos, sin, collision, goal, action, reward = ros.step(
-        lin_velocity=0.0, ang_velocity=0.0
-    )
+    latest_scan, distance, cos, sin, collision, goal, action, reward = ros.step(lin_velocity=0.0, ang_velocity=0.0)
 
     while epoch < max_epochs:
-
-        state, terminal = model.prepare_state(
-            latest_scan, distance, cos, sin, collision, goal, action
-        )
+        state, terminal = model.prepare_state(latest_scan, distance, cos, sin, collision, goal, action)
         action = model.get_action(state)
-        action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(
-            -max_action, max_action
-        )
+        action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(-max_action, max_action)
         action[0] = (action[0] + 1) / 2
 
         latest_scan, distance, cos, sin, collision, goal, action, reward = ros.step(
@@ -74,13 +67,9 @@ def eval(model, env, scenarios, epoch, max_steps):
     gl = 0
     for scenario in scenarios:
         count = 0
-        latest_scan, distance, cos, sin, collision, goal, action, reward = env.eval(
-            scenario=scenario
-        )
+        latest_scan, distance, cos, sin, collision, goal, action, reward = env.eval(scenario=scenario)
         while count < max_steps:
-            state, terminal = model.prepare_state(
-                latest_scan, distance, cos, sin, collision, goal, action
-            )
+            state, terminal = model.prepare_state(latest_scan, distance, cos, sin, collision, goal, action)
             if terminal:
                 break
             action = model.get_action(state)
