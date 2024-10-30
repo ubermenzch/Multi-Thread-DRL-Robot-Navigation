@@ -71,12 +71,21 @@ class TD3(object):
         self.critic_target.load_state_dict(self.critic.state_dict())
         self.critic_optimizer = torch.optim.Adam(params=self.critic.parameters(), lr=lr)
 
+        self.action_dim = action_dim
         self.max_action = max_action
         self.state_dim = state_dim
         self.writer = SummaryWriter()
         self.iter_count = 0
 
-    def get_action(self, state):
+    def get_action(self, obs, add_noise):
+        if add_noise:
+            return (
+                self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)
+            ).clip(self.max_action, self.max_action)
+        else:
+            return self.act(obs)
+
+    def act(self, state):
         # Function to get the action from the actor
         state = torch.Tensor(state).to(self.device)
         return self.actor(state).cpu().data.numpy().flatten()
@@ -173,9 +182,9 @@ class TD3(object):
             av_loss += loss
         self.iter_count += 1
         # Write new values for tensorboard
-        self.writer.add_scalar("loss", av_loss / iterations, self.iter_count)
-        self.writer.add_scalar("Av. Q", av_Q / iterations, self.iter_count)
-        self.writer.add_scalar("Max. Q", max_Q, self.iter_count)
+        self.writer.add_scalar("train/loss", av_loss / iterations, self.iter_count)
+        self.writer.add_scalar("train/avg_Q", av_Q / iterations, self.iter_count)
+        self.writer.add_scalar("train/max_Q", max_Q, self.iter_count)
 
     def save(self, filename, directory):
         torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))

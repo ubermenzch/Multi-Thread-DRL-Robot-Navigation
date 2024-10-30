@@ -3,6 +3,7 @@ from ros_python import ROS_env
 import numpy as np
 from utils import record_eval_positions
 
+
 def main(args=None):
     action_dim = 2
     max_action = 1
@@ -38,7 +39,16 @@ def main(args=None):
         )
 
         if terminal or steps == max_steps:
-            latest_scan, distance, cos, sin, collision, goal, action, reward = ros.reset()
+            (
+                latest_scan,
+                distance,
+                cos,
+                sin,
+                collision,
+                goal,
+                action,
+                reward,
+            ) = ros.reset()
             episode += 1
             steps = 0
         else:
@@ -47,7 +57,13 @@ def main(args=None):
         if (episode + 1) % episodes_per_epoch == 0:
             episode = 0
             epoch += 1
-            eval(model=model, env=ros, scenarios=scenarios, epoch=epoch, max_steps=max_steps)
+            eval(
+                model=model,
+                env=ros,
+                scenarios=scenarios,
+                epoch=epoch,
+                max_steps=max_steps,
+            )
 
 
 def eval(model, env, scenarios, epoch, max_steps):

@@ -70,11 +70,6 @@ class Pretraining:
         replay_buffer,
         iterations,
         batch_size,
-        discount=0.99999,
-        tau=0.005,
-        policy_noise=0.2,  # discount=0.99
-        noise_clip=0.5,
-        policy_freq=100,
     ):
         print("Running Pretraining")
         for _ in tqdm(range(pretraining_iterations)):
@@ -82,10 +77,5 @@ class Pretraining:
                 replay_buffer=replay_buffer,
                 iterations=iterations,
                 batch_size=batch_size,
-                discount=discount,
-                tau=tau,
-                policy_noise=policy_noise,
-                noise_clip=noise_clip,
-                policy_freq=policy_freq,
             )
         print("Model Pretrained")

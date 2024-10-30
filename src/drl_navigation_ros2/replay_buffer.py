@@ -41,6 +41,16 @@ class ReplayBuffer(object):
 
         return s_batch, a_batch, r_batch, t_batch, s2_batch
 
+    def return_buffer(self):
+
+        s = np.array([_[0] for _ in self.buffer])
+        a = np.array([_[1] for _ in self.buffer])
+        r = np.array([_[2] for _ in self.buffer]).reshape(-1, 1)
+        t = np.array([_[3] for _ in self.buffer]).reshape(-1, 1)
+        s2 = np.array([_[4] for _ in self.buffer])
+
+        return s, a, r, t, s2
+
     def clear(self):
         self.buffer.clear()
         self.count = 0

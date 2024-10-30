@@ -7,7 +7,13 @@ import yaml
 
 
 class HCM(object):
-    def __init__(self, state_dim, max_action, save_samples, file_location = "src/drl_navigation_ros2/assets/data.yml"):
+    def __init__(
+        self,
+        state_dim,
+        max_action,
+        save_samples,
+        file_location="src/drl_navigation_ros2/assets/data.yml",
+    ):
         self.max_action = max_action
         self.state_dim = state_dim
         self.writer = SummaryWriter()

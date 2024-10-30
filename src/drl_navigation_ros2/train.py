@@ -1,5 +1,6 @@
+from TD3.TD3 import TD3
+from SAC.SAC import SAC
 from ros_python import ROS_env
-from TD3 import TD3
 from replay_buffer import ReplayBuffer
 import torch
 import numpy as np
@@ -23,8 +24,8 @@ def main(args=None):
     batch_size = 40
     max_steps = 300
     steps = 0
-    load_saved_buffer = True
-    pretrain = True
+    load_saved_buffer = False
+    pretrain = False
 
     model = TD3(
         state_dim=state_dim,
@@ -33,8 +34,28 @@ def main(args=None):
         device=device,
         lr=lr,
     )
+    model = SAC(
+        obs_dim=state_dim,
+        action_dim=action_dim,
+        action_range=[-1.0, 1],
+        device=device,
+        discount=0.99,
+        init_temperature=0.1,
+        alpha_lr=1e-4,
+        alpha_betas=[0.9, 0.999],
+        actor_lr=1e-4,
+        actor_betas=[0.9, 0.999],
+        actor_update_frequency=1,
+        critic_lr=1e-4,
+        critic_betas=[0.9, 0.999],
+        critic_tau=0.005,
+        critic_target_update_frequency=2,
+        batch_size=batch_size,
+        learnable_temperature=True,
+    )
+
     ros = ROS_env()
-    scenarios = record_eval_positions(n_eval_scenarios=nr_eval_episodes)
+    eval_scenarios = record_eval_positions(n_eval_scenarios=nr_eval_episodes)
 
     if load_saved_buffer:
         pretraining = Pretraining(
@@ -46,7 +67,7 @@ def main(args=None):
         replay_buffer = pretraining.load_buffer()
         if pretrain:
             pretraining.train(
-                pretraining_iterations=200,
+                pretraining_iterations=50,
                 replay_buffer=replay_buffer,
                 iterations=training_iterations,
                 batch_size=batch_size,
@@ -63,7 +84,7 @@ def main(args=None):
         state, terminal = model.prepare_state(
             latest_scan, distance, cos, sin, collision, goal, a
         )
-        action = model.get_action(state)
+        action = model.get_action(state, True)
         action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(
             -max_action, max_action
         )
@@ -97,7 +118,7 @@ def main(args=None):
             eval(
                 model=model,
                 env=ros,
-                scenarios=scenarios,
+                scenarios=eval_scenarios,
                 epoch=epoch,
                 max_steps=max_steps,
             )
@@ -120,7 +141,7 @@ def eval(model, env, scenarios, epoch, max_steps):
             )
             if terminal:
                 break
-            action = model.get_action(state)
+            action = model.get_action(state, False)
             a_in = [(action[0] + 1) / 2, action[1]]
             latest_scan, distance, cos, sin, collision, goal, a, reward = env.step(
                 lin_velocity=a_in[0], ang_velocity=a_in[1]
@@ -136,9 +157,9 @@ def eval(model, env, scenarios, epoch, max_steps):
     print(f"Average Collision rate: {avg_col}")
     print(f"Average Goal rate: {avg_goal}")
     print("..............................................")
-    model.writer.add_scalar("avg_reward", avg_reward, epoch)
-    model.writer.add_scalar("avg_col", avg_col, epoch)
-    model.writer.add_scalar("avg_goal", avg_goal, epoch)
+    model.writer.add_scalar("eval/avg_reward", avg_reward, epoch)
+    model.writer.add_scalar("eval/avg_col", avg_col, epoch)
+    model.writer.add_scalar("eval/avg_goal", avg_goal, epoch)
 
 
 if __name__ == "__main__":
