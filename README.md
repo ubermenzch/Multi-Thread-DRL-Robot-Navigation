@@ -1,9 +1,4 @@
-# project-name
+# DRL-Robot-Navigation-ROS2
 
-Remember to:
 
-1. Replace all instances of `project-name` with the real name of the project
-2. Replace all instances of `project_name` with the "package name" of the project
-3. Rename the source code folder from `project_name` to something more fitting
-4. Generate a lock file
-5. Rewrite the `README.md`
+Deep Reinforcement Learning for mobile robot navigation in ROS2 Gazebo simulator. Using DRL neural network (TD3, SAC), a robot learns to navigate to a random goal point in a simulated environment while avoiding obstacles. Obstacles are detected by laser readings and a goal is given to the robot in polar coordinates. Trained in ROS Gazebo simulator with PyTorch.  Tested with ROS2 Foxy on Ubuntu 20.04 with python 3.8.10 and pytorch 1.10.0+cu113.
