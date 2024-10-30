@@ -34,25 +34,25 @@ def main(args=None):
         device=device,
         lr=lr,
     )
-    model = SAC(
-        obs_dim=state_dim,
-        action_dim=action_dim,
-        action_range=[-1.0, 1],
-        device=device,
-        discount=0.99,
-        init_temperature=0.1,
-        alpha_lr=1e-4,
-        alpha_betas=[0.9, 0.999],
-        actor_lr=1e-4,
-        actor_betas=[0.9, 0.999],
-        actor_update_frequency=1,
-        critic_lr=1e-4,
-        critic_betas=[0.9, 0.999],
-        critic_tau=0.005,
-        critic_target_update_frequency=2,
-        batch_size=batch_size,
-        learnable_temperature=True,
-    )
+    # model = SAC(
+    #     obs_dim=state_dim,
+    #     action_dim=action_dim,
+    #     action_range=[-1.0, 1],
+    #     device=device,
+    #     discount=0.99,
+    #     init_temperature=0.1,
+    #     alpha_lr=1e-4,
+    #     alpha_betas=[0.9, 0.999],
+    #     actor_lr=1e-4,
+    #     actor_betas=[0.9, 0.999],
+    #     actor_update_frequency=1,
+    #     critic_lr=1e-4,
+    #     critic_betas=[0.9, 0.999],
+    #     critic_tau=0.005,
+    #     critic_target_update_frequency=2,
+    #     batch_size=batch_size,
+    #     learnable_temperature=True,
+    # )
 
     ros = ROS_env()
     eval_scenarios = record_eval_positions(n_eval_scenarios=nr_eval_episodes)
