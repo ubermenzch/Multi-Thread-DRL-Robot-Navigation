@@ -11,7 +11,7 @@ Training example:
 
 ROS2 adapted from: https://github.com/tomasvr/turtlebot3_drlnav \
 TD3 adapted from: https://github.com/reiniscimurs/DRL-robot-navigation \
-SAC adapted from: https://github.com/denisyarats/pytorch_sac \
+SAC adapted from: https://github.com/denisyarats/pytorch_sac 
 
 
 ## Installation (Under Construction)
@@ -52,7 +52,7 @@ $ source /opt/ros/foxy/setup.bash
 $ source install/setup.bash
 ```
 
-To start gazebo simulator open a terminal and set up the sources (commands from above:)
+To start gazebo simulator open a terminal and set up the sources (commands from above):
 ```shell
 $ ros2 launch turtlebot3_gazebo ros2_drl.launch.py
 ```
