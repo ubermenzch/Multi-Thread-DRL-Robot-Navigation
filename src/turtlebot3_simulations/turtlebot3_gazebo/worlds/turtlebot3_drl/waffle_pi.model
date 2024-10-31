@@ -2,6 +2,14 @@
 <sdf version="1.6">
   <world name="default">
 
+    <plugin name="gazebo_ros_state" filename="libgazebo_ros_state.so">
+      <ros>
+        <namespace>/gazebo</namespace>
+      </ros>
+
+      <update_rate>1.0</update_rate>
+    </plugin>
+
     <include>
       <uri>model://ground_plane</uri>
     </include>
@@ -43,16 +51,44 @@
       </ode>
     </physics>
 
-    <model name="turtlebot3_drl_world">
-      <static>1</static>
-      <include>
-        <uri>model://turtlebot3_drl_world</uri>
-      </include>
-    </model>
+    <include>
+      <uri>model://turtlebot3_waffle_pi</uri>
+    </include>
 
     <include>
-      <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
-      <uri>model://turtlebot3_waffle_pi</uri>
+      <uri>model://10by10</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle1</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle2</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle3</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle4</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle5</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle6</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle7</uri>
+    </include>
+
+    <include>
+      <uri>model://obstacle8</uri>
     </include>
 
   </world>

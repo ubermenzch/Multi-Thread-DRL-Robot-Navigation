@@ -7,3 +7,8 @@ Training example:
 <p align="center">
     <img width=100% src="https://github.com/reiniscimurs/DRL-Robot-Navigation-ROS2/blob/main/gif.gif">
 </p>
+
+
+ROS2 adapted from: https://github.com/tomasvr/turtlebot3_drlnav \
+TD3 adapted from: https://github.com/reiniscimurs/DRL-robot-navigation \
+SAC adapted from: https://github.com/denisyarats/pytorch_sac 
