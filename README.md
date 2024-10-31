@@ -5,5 +5,5 @@ Deep Reinforcement Learning for mobile robot navigation in ROS2 Gazebo simulator
 
 Training example:
 <p align="center">
-    <img width=100% src="https://github.com/reiniscimurs/DRL-robot-navigation/blob/main/training.gif">
+    <img width=100% src="https://github.com/reiniscimurs/DRL-Robot-Navigation-ROS2/blob/main/gif.gif">
 </p>
