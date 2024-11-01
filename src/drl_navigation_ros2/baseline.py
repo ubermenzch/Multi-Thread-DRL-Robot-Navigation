@@ -16,8 +16,9 @@ def main(args=None):
     episode = 0
     max_steps = 300
     steps = 0
+    save_samples = True
 
-    model = HCM(state_dim=state_dim, max_action=max_action, save_samples=True)
+    model = HCM(state_dim=state_dim, max_action=max_action, save_samples=save_samples)
     ros = ROS_env()
     latest_scan, distance, cos, sin, collision, goal, action, reward = ros.step(lin_velocity=0.0, ang_velocity=0.0)
 
