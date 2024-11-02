@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -57,7 +59,7 @@ class Critic(nn.Module):
 
 # TD3 network
 class TD3(object):
-    def __init__(self, state_dim, action_dim, max_action, device, lr):
+    def __init__(self, state_dim, action_dim, max_action, device, lr, save_every = 0, load_model = False, save_directory = Path("src/drl_navigation_ros2/models/TD3"), model_name = "TD3", load_directory = Path("src/drl_navigation_ros2/models/TD3")):
         # Initialize the Actor network
         self.device = device
         self.actor = Actor(state_dim, action_dim).to(self.device)
@@ -76,6 +78,11 @@ class TD3(object):
         self.state_dim = state_dim
         self.writer = SummaryWriter()
         self.iter_count = 0
+        if load_model:
+            self.load(filename=model_name, directory=load_directory)
+        self.save_every = save_every
+        self.model_name = model_name
+        self.save_directory = save_directory
 
     def get_action(self, obs, add_noise):
         if add_noise:
@@ -96,9 +103,9 @@ class TD3(object):
         replay_buffer,
         iterations,
         batch_size,
-        discount=0.99999,
+        discount=0.99,
         tau=0.005,
-        policy_noise=0.2,  # discount=0.99
+        policy_noise=0.2,
         noise_clip=0.5,
         policy_freq=2,
     ):
@@ -185,18 +192,29 @@ class TD3(object):
         self.writer.add_scalar("train/loss", av_loss / iterations, self.iter_count)
         self.writer.add_scalar("train/avg_Q", av_Q / iterations, self.iter_count)
         self.writer.add_scalar("train/max_Q", max_Q, self.iter_count)
+        if self.save_every > 0 and self.iter_count % self.save_every == 0:
+            self.save(filename=self.model_name, directory=self.save_directory)
 
     def save(self, filename, directory):
         torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
+        torch.save(self.actor_target.state_dict(), "%s/%s_actor_target.pth" % (directory, filename))
         torch.save(self.critic.state_dict(), "%s/%s_critic.pth" % (directory, filename))
+        torch.save(self.critic_target.state_dict(), "%s/%s_critic_target.pth" % (directory, filename))
 
     def load(self, filename, directory):
         self.actor.load_state_dict(
             torch.load("%s/%s_actor.pth" % (directory, filename))
         )
+        self.actor_target.load_state_dict(
+            torch.load("%s/%s_actor_target.pth" % (directory, filename))
+        )
         self.critic.load_state_dict(
             torch.load("%s/%s_critic.pth" % (directory, filename))
         )
+        self.critic_target.load_state_dict(
+            torch.load("%s/%s_critic_target.pth" % (directory, filename))
+        )
+        print(f"Loaded weights from: {directory}")
 
     def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
         # update the returned data from ROS into a form used for learning in the current model

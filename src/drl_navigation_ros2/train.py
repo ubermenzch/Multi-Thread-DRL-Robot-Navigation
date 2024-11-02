@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from TD3.TD3 import TD3
 from ros_python import ROS_env
 from replay_buffer import ReplayBuffer
@@ -38,6 +40,9 @@ def main(args=None):
         max_action=max_action,
         device=device,
         lr=lr,
+        save_every=1,
+        save_directory=Path("src/drl_navigation_ros2/models/TD3"),
+        load_model= True,
     )  # instantiate a model
 
     ros = ROS_env()  # instantiate ROS environment
