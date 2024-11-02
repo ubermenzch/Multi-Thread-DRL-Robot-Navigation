@@ -31,7 +31,9 @@ class Pretraining:
                     goal = sample["goal"]
                     action = sample["action"]
 
-                    state, terminal = self.model.prepare_state(latest_scan, distance, cos, sin, collision, goal, action)
+                    state, terminal = self.model.prepare_state(
+                        latest_scan, distance, cos, sin, collision, goal, action
+                    )
 
                     if terminal:
                         continue
@@ -53,8 +55,12 @@ class Pretraining:
                         next_goal,
                         next_action,
                     )
-                    reward = self.reward_function(next_goal, next_collision, action, next_latest_scan)
-                    self.replay_buffer.add(state, action, reward, next_terminal, next_state)
+                    reward = self.reward_function(
+                        next_goal, next_collision, action, next_latest_scan
+                    )
+                    self.replay_buffer.add(
+                        state, action, reward, next_terminal, next_state
+                    )
 
         return self.replay_buffer
 

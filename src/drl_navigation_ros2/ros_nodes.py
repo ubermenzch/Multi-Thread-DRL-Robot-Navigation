@@ -17,8 +17,12 @@ class SensorSubscriber(Node):
     def __init__(self):
         super().__init__("sensor_subscriber")
         self.get_logger().set_level(SEVERITY)
-        self.subscriber_ = self.create_subscription(LaserScan, "scan", self.scan_listener_callback, 1)
-        self.subscriber_ = self.create_subscription(Odometry, "odom", self.odom_listener_callback, 1)
+        self.subscriber_ = self.create_subscription(
+            LaserScan, "scan", self.scan_listener_callback, 1
+        )
+        self.subscriber_ = self.create_subscription(
+            Odometry, "odom", self.odom_listener_callback, 1
+        )
         self.latest_position = None
         self.latest_heading = None
         self.latest_scan = None
@@ -39,7 +43,9 @@ class ScanSubscriber(Node):
     def __init__(self):
         super().__init__("scan_subscriber")
         self.get_logger().set_level(SEVERITY)
-        self.subscriber_ = self.create_subscription(LaserScan, "scan", self.listener_callback, 1)
+        self.subscriber_ = self.create_subscription(
+            LaserScan, "scan", self.listener_callback, 1
+        )
         self.latest_scan = None
 
     def listener_callback(self, msg):
@@ -53,7 +59,9 @@ class OdomSubscriber(Node):
     def __init__(self):
         super().__init__("odom_subscriber")
         self.get_logger().set_level(SEVERITY)
-        self.subscriber_ = self.create_subscription(Odometry, "odom", self.listener_callback, 1)
+        self.subscriber_ = self.create_subscription(
+            Odometry, "odom", self.listener_callback, 1
+        )
         self.latest_position = None
         self.latest_heading = None
 
@@ -76,7 +84,9 @@ class ResetWorldClient(Node):
     def wait_for_service(self, client, service_name, timeout=10.0):
         self.get_logger().info(f"Waiting for {service_name} service...")
         if not client.wait_for_service(timeout_sec=timeout):
-            self.get_logger().error(f"Service {service_name} not available after waiting.")
+            self.get_logger().error(
+                f"Service {service_name} not available after waiting."
+            )
             raise RuntimeError(f"Service {service_name} not available.")
 
     def reset_world(self):
@@ -103,7 +113,9 @@ class PhysicsClient(Node):
     def wait_for_service(self, client, service_name, timeout=10.0):
         self.get_logger().info(f"Waiting for {service_name} service...")
         if not client.wait_for_service(timeout_sec=timeout):
-            self.get_logger().error(f"Service {service_name} not available after waiting.")
+            self.get_logger().error(
+                f"Service {service_name} not available after waiting."
+            )
             raise RuntimeError(f"Service {service_name} not available.")
 
     def pause_physics(self):
@@ -154,7 +166,9 @@ class CmdVelPublisher(Node):
         twist_msg = Twist()
         # Set linear and angular velocities
         twist_msg.linear.x = float(linear_velocity)  # Example linear velocity (m/s)
-        twist_msg.angular.z = float(angular_velocity)  # Example angular velocity (rad/s)
+        twist_msg.angular.z = float(
+            angular_velocity
+        )  # Example angular velocity (rad/s)
         self.publisher_.publish(twist_msg)
 
 

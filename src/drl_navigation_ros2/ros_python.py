@@ -16,7 +16,15 @@ from squaternion import Quaternion
 
 
 class ROS_env:
-    def __init__(self, args=None):
+    def __init__(
+        self,
+        init_target_distance=2.0,
+        target_dist_increase=0.001,
+        max_target_dist=8.0,
+        target_reached_delta=0.5,
+        collision_delta=0.4,
+        args=None,
+    ):
         rclpy.init(args=args)
         self.cmd_vel_publisher = CmdVelPublisher()
         self.scan_subscriber = ScanSubscriber()
@@ -32,7 +40,11 @@ class ROS_env:
             [2.83, 2.93],
         ]
         self.sensor_subscriber = SensorSubscriber()
-        self.target_dist = 2.0
+        self.target_dist = init_target_distance
+        self.target_dist_increase = target_dist_increase
+        self.max_target_dist = max_target_dist
+        self.target_reached_delta = target_reached_delta
+        self.collision_delta = collision_delta
         self.target = self.set_target_position([0.0, 0.0])
 
     def step(self, lin_velocity=0.0, ang_velocity=0.1):
@@ -48,7 +60,9 @@ class ROS_env:
             latest_orientation,
         ) = self.sensor_subscriber.get_latest_sensor()
 
-        distance, cos, sin, _ = self.get_dist_sincos(latest_position, latest_orientation)
+        distance, cos, sin, _ = self.get_dist_sincos(
+            latest_position, latest_orientation
+        )
         collision = self.check_collision(latest_scan)
         goal = self.check_target(distance, collision)
         action = [lin_velocity, ang_velocity]
@@ -59,7 +73,9 @@ class ROS_env:
     def reset(self):
         self.world_reset.reset_world()
         action = [0.0, 0.0]
-        self.cmd_vel_publisher.publish_cmd_vel(linear_velocity=action[0], angular_velocity=action[1])
+        self.cmd_vel_publisher.publish_cmd_vel(
+            linear_velocity=action[0], angular_velocity=action[1]
+        )
 
         self.element_positions = [
             [-2.93, 3.17],
@@ -87,19 +103,23 @@ class ROS_env:
 
         self.physics_client.unpause_physics()
         time.sleep(1)
-        latest_scan, distance, cos, sin, _, _, a, reward = self.step(lin_velocity=0.0, ang_velocity=0.0)
+        latest_scan, distance, cos, sin, _, _, a, reward = self.step(
+            lin_velocity=0.0, ang_velocity=0.0
+        )
         return latest_scan, distance, cos, sin, False, False, a, reward
 
     def set_target_position(self, robot_position):
         pos = False
         while not pos:
             x = np.clip(
-                robot_position[0] + np.random.uniform(-self.target_dist, self.target_dist),
+                robot_position[0]
+                + np.random.uniform(-self.target_dist, self.target_dist),
                 -4.0,
                 4.0,
             )
             y = np.clip(
-                robot_position[1] + np.random.uniform(-self.target_dist, self.target_dist),
+                robot_position[1]
+                + np.random.uniform(-self.target_dist, self.target_dist),
                 -4.0,
                 4.0,
             )
@@ -159,15 +179,15 @@ class ROS_env:
         return pos
 
     def check_collision(self, laser_scan):
-        if min(laser_scan) < 0.4:
+        if min(laser_scan) < self.collision_delta:
             return True
         return False
 
     def check_target(self, distance, collision):
-        if distance < 0.5 and not collision:
-            self.target_dist += 0.001
-            if self.target_dist > 8:
-                self.target_dist = 8
+        if distance < self.target_reached_delta and not collision:
+            self.target_dist += self.target_dist_increase
+            if self.target_dist > self.max_target_dist:
+                self.target_dist = self.max_target_dist
             return True
         return False
 

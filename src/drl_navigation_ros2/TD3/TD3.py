@@ -79,9 +79,9 @@ class TD3(object):
 
     def get_action(self, obs, add_noise):
         if add_noise:
-            return (self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)).clip(
-                self.max_action, self.max_action
-            )
+            return (
+                self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)
+            ).clip(self.max_action, self.max_action)
         else:
             return self.act(obs)
 
@@ -124,7 +124,11 @@ class TD3(object):
             next_action = self.actor_target(next_state)
 
             # Add noise to the action
-            noise = torch.Tensor(batch_actions).data.normal_(0, policy_noise).to(self.device)
+            noise = (
+                torch.Tensor(batch_actions)
+                .data.normal_(0, policy_noise)
+                .to(self.device)
+            )
             noise = noise.clamp(-noise_clip, noise_clip)
             next_action = (next_action + noise).clamp(-self.max_action, self.max_action)
 
@@ -160,12 +164,20 @@ class TD3(object):
 
                 # Use soft update to update the actor-target network parameters by
                 # infusing small amount of current parameters
-                for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
-                    target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
+                for param, target_param in zip(
+                    self.actor.parameters(), self.actor_target.parameters()
+                ):
+                    target_param.data.copy_(
+                        tau * param.data + (1 - tau) * target_param.data
+                    )
                 # Use soft update to update the critic-target network parameters by infusing
                 # small amount of current parameters
-                for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-                    target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
+                for param, target_param in zip(
+                    self.critic.parameters(), self.critic_target.parameters()
+                ):
+                    target_param.data.copy_(
+                        tau * param.data + (1 - tau) * target_param.data
+                    )
 
             av_loss += loss
         self.iter_count += 1
@@ -179,8 +191,12 @@ class TD3(object):
         torch.save(self.critic.state_dict(), "%s/%s_critic.pth" % (directory, filename))
 
     def load(self, filename, directory):
-        self.actor.load_state_dict(torch.load("%s/%s_actor.pth" % (directory, filename)))
-        self.critic.load_state_dict(torch.load("%s/%s_critic.pth" % (directory, filename)))
+        self.actor.load_state_dict(
+            torch.load("%s/%s_actor.pth" % (directory, filename))
+        )
+        self.critic.load_state_dict(
+            torch.load("%s/%s_critic.pth" % (directory, filename))
+        )
 
     def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
         # update the returned data from ROS into a form used for learning in the current model

@@ -12,6 +12,7 @@ class HCM(object):
         state_dim,
         max_action,
         save_samples,
+        max_added_samples=10_000,
         file_location="src/drl_navigation_ros2/assets/data.yml",
     ):
         self.max_action = max_action
@@ -19,9 +20,10 @@ class HCM(object):
         self.writer = SummaryWriter()
         self.iterator = 0
         self.save_samples = save_samples
+        self.max_added_samples = max_added_samples
         self.file_location = file_location
 
-    def get_action(self, state):
+    def get_action(self, state, add_noise):
         sin = state[-3]
         cos = state[-4]
         angle = atan2(sin, cos)
@@ -87,7 +89,7 @@ class HCM(object):
         terminal = 1 if collision or goal else 0
 
         self.iterator += 1
-        if self.save_samples and self.iterator < 10_000:
+        if self.save_samples and self.iterator < self.max_added_samples:
             action = action if type(action) is list else action
             action = [float(a) for a in action]
             sample = {

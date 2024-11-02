@@ -14,21 +14,21 @@ class SAC(object):
         self,
         obs_dim,
         action_dim,
-        action_range,
         device,
-        discount,
-        init_temperature,
-        alpha_lr,
-        alpha_betas,
-        actor_lr,
-        actor_betas,
-        actor_update_frequency,
-        critic_lr,
-        critic_betas,
-        critic_tau,
-        critic_target_update_frequency,
         batch_size,
-        learnable_temperature,
+        action_range=[-1.0, 1],
+        discount=0.99,
+        init_temperature=0.1,
+        alpha_lr=1e-4,
+        alpha_betas=(0.9, 0.999),
+        actor_lr=1e-4,
+        actor_betas=(0.9, 0.999),
+        actor_update_frequency=1,
+        critic_lr=1e-4,
+        critic_betas=(0.9, 0.999),
+        critic_tau=0.005,
+        critic_target_update_frequency=2,
+        learnable_temperature=True,
     ):
         super().__init__()
 
@@ -43,12 +43,12 @@ class SAC(object):
         self.batch_size = batch_size
         self.learnable_temperature = learnable_temperature
 
-        self.critic = critic_model(obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2).to(
-            self.device
-        )
-        self.critic_target = critic_model(obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2).to(
-            self.device
-        )
+        self.critic = critic_model(
+            obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2
+        ).to(self.device)
+        self.critic_target = critic_model(
+            obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2
+        ).to(self.device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         self.actor = actor_model(
@@ -65,11 +65,17 @@ class SAC(object):
         self.target_entropy = -action_dim
 
         # optimizers
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=actor_lr, betas=actor_betas)
+        self.actor_optimizer = torch.optim.Adam(
+            self.actor.parameters(), lr=actor_lr, betas=actor_betas
+        )
 
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=critic_lr, betas=critic_betas)
+        self.critic_optimizer = torch.optim.Adam(
+            self.critic.parameters(), lr=critic_lr, betas=critic_betas
+        )
 
-        self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=alpha_lr, betas=alpha_betas)
+        self.log_alpha_optimizer = torch.optim.Adam(
+            [self.log_alpha], lr=alpha_lr, betas=alpha_betas
+        )
 
         self.critic_target.train()
 
@@ -80,7 +86,9 @@ class SAC(object):
 
     def train(self, replay_buffer, iterations, batch_size):
         for _ in range(iterations):
-            self.update(replay_buffer=replay_buffer, step=self.step, batch_size=batch_size)
+            self.update(
+                replay_buffer=replay_buffer, step=self.step, batch_size=batch_size
+            )
         self.step += 1
 
     @property
@@ -89,9 +97,9 @@ class SAC(object):
 
     def get_action(self, obs, add_noise):
         if add_noise:
-            return (self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)).clip(
-                self.action_range[0], self.action_range[1]
-            )
+            return (
+                self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)
+            ).clip(self.action_range[0], self.action_range[1])
         else:
             return self.act(obs)
 
@@ -115,7 +123,9 @@ class SAC(object):
 
         # get current Q estimates
         current_Q1, current_Q2 = self.critic(obs, action)
-        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(
+            current_Q2, target_Q
+        )
         self.writer.add_scalar("train_critic/loss", critic_loss, step)
 
         # Optimize the critic
@@ -147,7 +157,9 @@ class SAC(object):
 
         if self.learnable_temperature:
             self.log_alpha_optimizer.zero_grad()
-            alpha_loss = (self.alpha * (-log_prob - self.target_entropy).detach()).mean()
+            alpha_loss = (
+                self.alpha * (-log_prob - self.target_entropy).detach()
+            ).mean()
             self.writer.add_scalar("train_alpha/loss", alpha_loss, step)
             self.writer.add_scalar("train_alpha/value", self.alpha, step)
             alpha_loss.backward()
