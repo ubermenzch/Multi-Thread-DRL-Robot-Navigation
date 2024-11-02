@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from TD3.TD3 import TD3
+from SAC.SAC import SAC
 from ros_python import ROS_env
 from replay_buffer import ReplayBuffer
 import torch
@@ -14,7 +15,6 @@ def main(args=None):
     action_dim = 2  # number of actions produced by the model
     max_action = 1  # maximum absolute value of output actions
     state_dim = 25  # number of input values in the neural network (vector length of state input)
-    lr = 1e-4  # learning rate for models
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # using cuda if it is available, cpu otherwise
@@ -33,16 +33,15 @@ def main(args=None):
     pretraining_iterations = (
         50  # number of training iterations to run during pre-training
     )
+    save_every = 100  # save the model every n training cycles
 
-    model = TD3(
+    model = SAC(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
-        lr=lr,
-        save_every=1,
-        save_directory=Path("src/drl_navigation_ros2/models/TD3"),
-        load_model= True,
+        save_every=save_every,
+        load_model=False,
     )  # instantiate a model
 
     ros = ROS_env()  # instantiate ROS environment

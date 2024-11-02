@@ -59,7 +59,19 @@ class Critic(nn.Module):
 
 # TD3 network
 class TD3(object):
-    def __init__(self, state_dim, action_dim, max_action, device, lr, save_every = 0, load_model = False, save_directory = Path("src/drl_navigation_ros2/models/TD3"), model_name = "TD3", load_directory = Path("src/drl_navigation_ros2/models/TD3")):
+    def __init__(
+        self,
+        state_dim,
+        action_dim,
+        max_action,
+        device,
+        lr=1e-4,
+        save_every=0,
+        load_model=False,
+        save_directory=Path("src/drl_navigation_ros2/models/TD3"),
+        model_name="TD3",
+        load_directory=Path("src/drl_navigation_ros2/models/TD3"),
+    ):
         # Initialize the Actor network
         self.device = device
         self.actor = Actor(state_dim, action_dim).to(self.device)
@@ -197,9 +209,15 @@ class TD3(object):
 
     def save(self, filename, directory):
         torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
-        torch.save(self.actor_target.state_dict(), "%s/%s_actor_target.pth" % (directory, filename))
+        torch.save(
+            self.actor_target.state_dict(),
+            "%s/%s_actor_target.pth" % (directory, filename),
+        )
         torch.save(self.critic.state_dict(), "%s/%s_critic.pth" % (directory, filename))
-        torch.save(self.critic_target.state_dict(), "%s/%s_critic_target.pth" % (directory, filename))
+        torch.save(
+            self.critic_target.state_dict(),
+            "%s/%s_critic_target.pth" % (directory, filename),
+        )
 
     def load(self, filename, directory):
         self.actor.load_state_dict(

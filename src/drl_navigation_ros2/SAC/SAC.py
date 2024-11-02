@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -12,11 +14,10 @@ class SAC(object):
 
     def __init__(
         self,
-        obs_dim,
+        state_dim,
         action_dim,
         device,
-        batch_size,
-        action_range=[-1.0, 1],
+        max_action,
         discount=0.99,
         init_temperature=0.1,
         alpha_lr=1e-4,
@@ -29,35 +30,51 @@ class SAC(object):
         critic_tau=0.005,
         critic_target_update_frequency=2,
         learnable_temperature=True,
+        save_every=0,
+        load_model=False,
+        save_directory=Path("src/drl_navigation_ros2/models/SAC"),
+        model_name="SAC",
+        load_directory=Path("src/drl_navigation_ros2/models/SAC"),
     ):
         super().__init__()
 
-        self.state_dim = obs_dim
+        self.state_dim = state_dim
         self.action_dim = action_dim
-        self.action_range = action_range
+        self.action_range = (-max_action, max_action)
         self.device = torch.device(device)
         self.discount = discount
         self.critic_tau = critic_tau
         self.actor_update_frequency = actor_update_frequency
         self.critic_target_update_frequency = critic_target_update_frequency
-        self.batch_size = batch_size
         self.learnable_temperature = learnable_temperature
+        self.save_every = save_every
+        self.model_name = model_name
+        self.save_directory = save_directory
 
         self.critic = critic_model(
-            obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2
+            obs_dim=self.state_dim,
+            action_dim=action_dim,
+            hidden_dim=1024,
+            hidden_depth=2,
         ).to(self.device)
         self.critic_target = critic_model(
-            obs_dim=obs_dim, action_dim=action_dim, hidden_dim=1024, hidden_depth=2
+            obs_dim=self.state_dim,
+            action_dim=action_dim,
+            hidden_dim=1024,
+            hidden_depth=2,
         ).to(self.device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         self.actor = actor_model(
-            obs_dim=obs_dim,
+            obs_dim=self.state_dim,
             action_dim=action_dim,
             hidden_dim=1024,
             hidden_depth=2,
             log_std_bounds=[-5, 2],
         ).to(self.device)
+
+        if load_model:
+            self.load(filename=model_name, directory=load_directory)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(self.device)
         self.log_alpha.requires_grad = True
@@ -84,12 +101,34 @@ class SAC(object):
         self.step = 0
         self.writer = SummaryWriter()
 
+    def save(self, filename, directory):
+        torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
+        torch.save(self.critic.state_dict(), "%s/%s_critic.pth" % (directory, filename))
+        torch.save(
+            self.critic_target.state_dict(),
+            "%s/%s_critic_target.pth" % (directory, filename),
+        )
+
+    def load(self, filename, directory):
+        self.actor.load_state_dict(
+            torch.load("%s/%s_actor.pth" % (directory, filename))
+        )
+        self.critic.load_state_dict(
+            torch.load("%s/%s_critic.pth" % (directory, filename))
+        )
+        self.critic_target.load_state_dict(
+            torch.load("%s/%s_critic_target.pth" % (directory, filename))
+        )
+        print(f"Loaded weights from: {directory}")
+
     def train(self, replay_buffer, iterations, batch_size):
         for _ in range(iterations):
             self.update(
                 replay_buffer=replay_buffer, step=self.step, batch_size=batch_size
             )
         self.step += 1
+        if self.save_every > 0 and self.step % self.save_every == 0:
+            self.save(filename=self.model_name, directory=self.save_directory)
 
     @property
     def alpha(self):
