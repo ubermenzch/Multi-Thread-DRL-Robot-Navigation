@@ -28,8 +28,8 @@ def main(args=None):
     batch_size = 40  # batch size for each training iteration
     max_steps = 300  # maximum number of steps in single episode
     steps = 0  # starting step number
-    load_saved_buffer = False  # whether to load experiences from assets/data.yml
-    pretrain = False  # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
+    load_saved_buffer = True  # whether to load experiences from assets/data.yml
+    pretrain = True  # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
     pretraining_iterations = (
         50  # number of training iterations to run during pre-training
     )

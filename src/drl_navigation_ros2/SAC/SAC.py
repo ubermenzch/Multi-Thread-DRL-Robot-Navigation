@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+from statistics import mean
 import SAC.SAC_utils as utils
 from SAC.SAC_critic import DoubleQCritic as critic_model
 from SAC.SAC_actor import DiagGaussianActor as actor_model
@@ -32,6 +33,7 @@ class SAC(object):
         learnable_temperature=True,
         save_every=0,
         load_model=False,
+        log_dist_and_hist = False,
         save_directory=Path("src/drl_navigation_ros2/models/SAC"),
         model_name="SAC",
         load_directory=Path("src/drl_navigation_ros2/models/SAC"),
@@ -50,6 +52,16 @@ class SAC(object):
         self.save_every = save_every
         self.model_name = model_name
         self.save_directory = save_directory
+        self.log_dist_and_hist = log_dist_and_hist
+
+        self.train_metrics_dict = { "train_critic/loss_av": [],
+                                    "train_actor/loss_av": [],
+                                    "train_actor/target_entropy_av": [],
+                                    "train_actor/entropy_av": [],
+                                    "train_alpha/loss_av": [],
+                                    "train_alpha/value_av": [],
+                                    "train/batch_reward_av": []
+        }
 
         self.critic = critic_model(
             obs_dim=self.state_dim,
@@ -126,7 +138,13 @@ class SAC(object):
             self.update(
                 replay_buffer=replay_buffer, step=self.step, batch_size=batch_size
             )
+
+        for key, value in self.train_metrics_dict.items():
+            if len(value):
+                self.writer.add_scalar(key, mean(value), self.step)
+            self.train_metrics_dict[key] = []
         self.step += 1
+
         if self.save_every > 0 and self.step % self.save_every == 0:
             self.save(filename=self.model_name, directory=self.save_directory)
 
@@ -165,14 +183,15 @@ class SAC(object):
         critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(
             current_Q2, target_Q
         )
+        self.train_metrics_dict["train_critic/loss_av"].append(critic_loss.item())
         self.writer.add_scalar("train_critic/loss", critic_loss, step)
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-
-        self.critic.log(self.writer, step)
+        if self.log_dist_and_hist:
+            self.critic.log(self.writer, step)
 
     def update_actor_and_alpha(self, obs, step):
         dist = self.actor(obs)
@@ -182,7 +201,9 @@ class SAC(object):
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_prob - actor_Q).mean()
-
+        self.train_metrics_dict["train_actor/loss_av"].append(actor_loss.item())
+        self.train_metrics_dict["train_actor/target_entropy_av"].append(self.target_entropy)
+        self.train_metrics_dict["train_actor/entropy_av"].append(-log_prob.mean().item())
         self.writer.add_scalar("train_actor/loss", actor_loss, step)
         self.writer.add_scalar("train_actor/target_entropy", self.target_entropy, step)
         self.writer.add_scalar("train_actor/entropy", -log_prob.mean(), step)
@@ -191,14 +212,16 @@ class SAC(object):
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-
-        self.actor.log(self.writer, step)
+        if self.log_dist_and_hist:
+            self.actor.log(self.writer, step)
 
         if self.learnable_temperature:
             self.log_alpha_optimizer.zero_grad()
             alpha_loss = (
                 self.alpha * (-log_prob - self.target_entropy).detach()
             ).mean()
+            self.train_metrics_dict["train_alpha/loss_av"].append(alpha_loss.item())
+            self.train_metrics_dict["train_alpha/value_av"].append(self.alpha.item())
             self.writer.add_scalar("train_alpha/loss", alpha_loss, step)
             self.writer.add_scalar("train_alpha/value", self.alpha, step)
             alpha_loss.backward()
@@ -218,7 +241,7 @@ class SAC(object):
         action = torch.Tensor(batch_actions).to(self.device)
         reward = torch.Tensor(batch_rewards).to(self.device)
         done = torch.Tensor(batch_dones).to(self.device)
-
+        self.train_metrics_dict["train/batch_reward_av"].append(batch_rewards.mean().item())
         self.writer.add_scalar("train/batch_reward", batch_rewards.mean(), step)
 
         self.update_critic(state, action, reward, next_state, done, step)
