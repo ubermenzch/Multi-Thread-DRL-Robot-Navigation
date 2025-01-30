@@ -100,7 +100,7 @@ class TD3(object):
         if add_noise:
             return (
                 self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)
-            ).clip(self.max_action, self.max_action)
+            ).clip(-self.max_action, self.max_action)
         else:
             return self.act(obs)
 
