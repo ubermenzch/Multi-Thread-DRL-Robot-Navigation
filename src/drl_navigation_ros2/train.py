@@ -80,9 +80,6 @@ def main(args=None):
             latest_scan, distance, cos, sin, collision, goal, a
         )  # get state a state representation from returned data from the environment
         action = model.get_action(state, True)  # get an action from the model
-        action = (action + np.random.normal(0, 0.2, size=action_dim)).clip(
-            -max_action, max_action
-        )  # add random noise to the model
         a_in = [
             (action[0] + 1) / 2,
             action[1],
