@@ -1,7 +1,7 @@
-# Multi-Thread-DRL-Robot-Navigation
+# Multi-Thread-DRL-Robot-Navigation（多线程训练深度强化学习机器人导航）
 基于reiniscimurs的DRL-Robot-Navigation-ROS2项目git@github.com:reiniscimurs/DRL-Robot-Navigation-ROS2.git，添加了如多实例gazebo训练、利用栅格图作为输入进行路径规划等功能。
 
-Training example:
+训练示例：
 <p align="center">
     <img width=100% src="https://github.com/reiniscimurs/DRL-Robot-Navigation-ROS2/blob/main/gif.gif">
 </p>
@@ -12,30 +12,33 @@ TD3 adapted from: https://github.com/reiniscimurs/DRL-robot-navigation \
 SAC adapted from: https://github.com/denisyarats/pytorch_sac 
 
 
-## Installation (Under Construction)
-Main dependencies: 
+## 安装教程
+主要依赖
 
 * [ROS2 Foxy](https://docs.ros.org/en/foxy/Installation.html)
 * [PyTorch](https://pytorch.org/get-started/locally/)
 * [Tensorboard](https://github.com/tensorflow/tensorboard)
 
-Clone the repository:
+Clone仓库:
 ```shell
-$ cd ~
-### Clone仓库
-$ git clone https://github.com/ubermenzch/Multi-Thread-DRL-Robot-Navigation.git
-### 如果不行则在自己电脑上生成密钥后，将公钥上传至账户再使用如下指令进行Clone
-$ git clone git@github.com:ubermenzch/Multi-Thread-DRL-Robot-Navigation.git
+cd ~
+git clone https://github.com/ubermenzch/Multi-Thread-DRL-Robot-Navigation.git
+### 如果失败，则在自己电脑上生成密钥后，将公钥上传至github账户再使用如下指令进行Clone
+git clone git@github.com:ubermenzch/Multi-Thread-DRL-Robot-Navigation.git
+```
+创建密钥方法（在使用https进行clone失败时使用）：
+```shell
 ### 生成ed25519密钥
-$ ssh-keygen -t ed25519 -C "your_email@example.com"
+ssh-keygen -t ed25519 -C "your_email@example.com"
 ### 获取公钥内容（路径根据自己存储密钥的位置而定）
-$ cat ~/.ssh/id_ed25519.pub
+cat ~/.ssh/id_ed25519.pub
 ```
 
 在ubuntu20.04系统中，通过鱼香ROS一键安装完成：ros2 foxy安装、源配置、ros环境配置、rosdep配置：
 ```shell
 $ wget http://fishros.com/install -O fishros && . fishros
 ```
+
 安装编译工具：
 ```shell
 $ cd ~/DRL-Robot-Navigation-ROS2
@@ -56,6 +59,7 @@ $ export TURTLEBOT3_MODEL=waffle
 $ source /opt/ros/foxy/setup.bash
 $ source install/setup.bash
 ```
+
 安装gazebo11：
 ```shell
 sudo apt install gazebo11
@@ -72,25 +76,40 @@ pip install "networkx<3.0" --no-deps
 pip install torch==2.2.1+cu121 torchvision==0.17.1+cu121 torchaudio==2.2.1+cu121 \
  --index-url https://download.pytorch.org/whl/cu121
 ```
-
-To start gazebo simulator open a terminal and set up the sources (commands from above):
+安装squaternion、tqdm
 ```shell
-$ ros2 launch turtlebot3_gazebo ros2_drl.launch.py
+pip install squaternion
+pip install tqdm
 ```
 
-To launch training, open another terminal and set up the same sources:
+安装tensorboard（用于观测训练）：
 ```shell
-$ cd ~/DRL-Robot-Navigation-ROS2
-$ python3 src/drl_navigation_ros2/train.py
+pip install tensorboard
+pip install tensorboardx
 ```
 
-To observe training in rviz, open a new terminal and run:
+下载gazebo模型库（原github项目自带模型不全，会导致训练启动失败）。访问链接下载（如果网络可行也直接在服务器里下，若网络不可行则下载到本地再上传到服务器）：https://github.com/osrf/gazebo_models/archive/refs/heads/master.zip
 ```shell
-$ rviz2
+# 解压zip文件
+unzip gazebo_models-master.zip
+# 将gazebo_models-master里的所有文件夹移动到模型文件夹（~/DRL-Robot-Navigation-ROS2/src/turtlebot3_simulations/turtlebot3_gazebo/models）
+mv ~/gazebo_models-master/* ~/DRL-Robot-Navigation-ROS2/src/turtlebot3_simulations/turtlebot3_gazebo/models
 ```
 
-To launch the tensorboard, open a new terminal and run:
+先在一个终端启动gazebo:
 ```shell
-$ cd ~/DRL-Robot-Navigation-ROS2
-$ tensorboard --logdir runs
+ros2 launch turtlebot3_gazebo ros2_drl.launch.py
+```
+
+再在另一个终端启动训练脚本：
+```shell
+# 注意，一定要在DRL-Robot-Navigation-ROS2目录下启动脚本
+cd ~/DRL-Robot-Navigation-ROS2
+python3 src/drl_navigation_ros2/train.py
+```
+
+通过tensorboard监控训练
+```shell
+cd ~/DRL-Robot-Navigation-ROS2
+tensorboard --logdir runs
 ```
