@@ -20,7 +20,9 @@ class Pretraining:
         for file_name in self.file_names:
             print("Loading file: ", file_name)
             with open(file_name, "r") as file:
+                print("It will take minutes.Please be patient...")
                 samples = yaml.full_load(file)
+                print("full_loaded")
                 for i in tqdm(range(1, len(samples) - 1)):
                     sample = samples[i]
                     latest_scan = sample["latest_scan"]

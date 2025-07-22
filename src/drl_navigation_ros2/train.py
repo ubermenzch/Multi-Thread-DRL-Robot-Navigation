@@ -18,22 +18,41 @@ def main(args=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "cpu"
     )  # using cuda if it is available, cpu otherwise
-    nr_eval_episodes = 10  # how many episodes to use to run evaluation
-    max_epochs = 100  # max number of epochs
-    epoch = 0  # starting epoch number
-    episodes_per_epoch = 70  # how many episodes to run in single epoch
-    episode = 0  # starting episode number
-    train_every_n = 2  # train and update network parameters every n episodes
-    training_iterations = 500  # how many batches to use for single training cycle
-    batch_size = 40  # batch size for each training iteration
-    max_steps = 300  # maximum number of steps in single episode
-    steps = 0  # starting step number
-    load_saved_buffer = True  # whether to load experiences from assets/data.yml
-    pretrain = True  # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
+    if torch.cuda.is_available():
+        print("GPU CUDA Ready")
+    else:
+        print("CPU CUDA Ready")
+    # how many episodes to use to run evaluation 
+    nr_eval_episodes = 10  # 用训练好的模型运行nr_eval_episodes个完整的回合（episodes）以评估模型性能。默认值为10
+    # 训练整体思路是：一个轮次中，让智能体跑多个回合，这多个回合的数据在训练中被使用，训练时通过抽取回合数据来更新模型
+    # max number of epochs. 
+    max_epochs = 100  # 设置整个训练过程的最大迭代次数。默认值为100。
+    # starting epoch number
+    epoch = 0  # 当前训练轮次计数器
+    # how many episodes to run in single epoch
+    episodes_per_epoch = 70  # 在1轮（epoch）内收集episodes_per_epoch个回合的经验数据用于训练。默认值为70.
+    # starting episode number
+    episode = 0  # 当前轮次的回合数。默认值0.
+    # train and update network parameters every n episodes
+    train_every_n = 2  # 每train_every_n个回合后执行一次训练。默认值为2.
+    # how many batches to use for single training cycle
+    training_iterations = 500  # 每次执行训练时，用随机抽取的批次数据更新模型training_iterations次。默认值为500.
+    # batch size for each training iteration
+    batch_size = 40  # 从经验池中随机抽取batch_size条经验作为一个训练批次来对模型参数进行更新。默认值为40.
+    # maximum number of steps in single episode
+    max_steps = 300  # 限制每个回合最多执行max_steps步操作，超过会强制结束回合。默认值为300.
+    # starting step number
+    steps = 0  # 当前回合的步数。默认值为0.
+    # whether to load experiences from assets/data.yml
+    load_saved_buffer = False  # 是否加载预存经验池。默认值为True。
+    # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
+    pretrain = False  # 是否执行预训练。默认值为True，同时要求load_saved_buffer也必须为True。
+    # number of training iterations to run during pre-training
     pretraining_iterations = (
-        50  # number of training iterations to run during pre-training
+        50  # 预训练迭代次数，默认值50
     )
-    save_every = 100  # save the model every n training cycles
+    # save the model every n training cycles
+    save_every = 100  # 每save_every次训练后保存一次模型，默认值100
 
     model = SAC(
         state_dim=state_dim,
@@ -41,10 +60,11 @@ def main(args=None):
         max_action=max_action,
         device=device,
         save_every=save_every,
-        load_model=False,
+        load_model=True,
     )  # instantiate a model
-
+    print("Model Loaded")
     ros = ROS_env()  # instantiate ROS environment
+    print("ROS Environment Initialized")
     eval_scenarios = record_eval_positions(
         n_eval_scenarios=nr_eval_episodes
     )  # save scenarios that will be used for evaluation
@@ -56,9 +76,11 @@ def main(args=None):
             replay_buffer=ReplayBuffer(buffer_size=5e3, random_seed=42),
             reward_function=ros.get_reward,
         )  # instantiate pre-trainind
+        print("Replay Buffer Loading")
         replay_buffer = (
             pretraining.load_buffer()
         )  # fill buffer with experiences from the data.yml file
+        print("Replay Buffer Loaded")
         if pretrain:
             pretraining.train(
                 pretraining_iterations=pretraining_iterations,
@@ -66,11 +88,11 @@ def main(args=None):
                 iterations=training_iterations,
                 batch_size=batch_size,
             )  # run pre-training
+        print("Load Saved Buffer Done")
     else:
         replay_buffer = ReplayBuffer(
             buffer_size=5e3, random_seed=42
         )  # if not experiences are loaded, instantiate an empty buffer
-
     latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
         lin_velocity=0.0, ang_velocity=0.0
     )  # get the initial step state
@@ -83,7 +105,7 @@ def main(args=None):
         a_in = [
             (action[0] + 1) / 2,
             action[1],
-        ]  # clip linear velocity to [0, 0.5] m/s range
+        ]
 
         latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
             lin_velocity=a_in[0], ang_velocity=a_in[1]

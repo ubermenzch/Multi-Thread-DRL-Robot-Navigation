@@ -146,3 +146,4 @@ tests/reports
 .ruff_cache
 /log/
 /install/
+runs/
