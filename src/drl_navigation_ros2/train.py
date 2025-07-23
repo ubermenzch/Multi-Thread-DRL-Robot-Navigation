@@ -52,7 +52,7 @@ def main(args=None):
         50  # 预训练迭代次数，默认值50
     )
     # save the model every n training cycles
-    save_every = 100  # 每save_every次训练后保存一次模型，默认值100
+    save_every = 5  # 每save_every次训练后保存一次模型，默认值100
 
     model = SAC(
         state_dim=state_dim,

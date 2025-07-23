@@ -111,7 +111,11 @@ class SAC(object):
         self.actor.train(True)
         self.critic.train(True)
         self.step = 0
-        self.writer = SummaryWriter()
+        # 添加唯一标识路径
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_dir = f"runs/{self.model_name}_{timestamp}"
+    
+        self.writer = SummaryWriter(log_dir=log_dir, flush_secs=30)
 
     def save(self, filename, directory):
         torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
@@ -120,6 +124,7 @@ class SAC(object):
             self.critic_target.state_dict(),
             "%s/%s_critic_target.pth" % (directory, filename),
         )
+        print(f"Saved models to: {directory}")
 
     def load(self, filename, directory):
         self.actor.load_state_dict(
