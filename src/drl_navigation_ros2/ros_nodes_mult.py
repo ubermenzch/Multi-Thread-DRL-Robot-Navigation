@@ -172,6 +172,18 @@ class CmdVelPublisher(Node):
         )  # Example angular velocity (rad/s)
         self.publisher_.publish(twist_msg)
 
+class OdomPublisher(Node):
+    def __init__(self):
+        super().__init__("odom_publisher")
+        self.get_logger().set_level(SEVERITY)
+        self.publisher_ = self.create_publisher(Twist, "utlidar/robot_odom", 3)
+
+    def publish_cmd_vel(self, linear_velocity=0.0, angular_velocity=0.0):
+        twist_msg = Twist()
+        # Set linear and angular velocities
+        twist_msg.linear.x = float(linear_velocity)  # Example linear velocity (m/s)
+        twist_msg.angular.z = float(angular_velocity)  # Example angular velocity (rad/s)
+        self.publisher_.publish(twist_msg)
 
 class MarkerPublisher(Node):
     def __init__(self):

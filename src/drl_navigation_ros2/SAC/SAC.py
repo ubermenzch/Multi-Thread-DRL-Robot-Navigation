@@ -37,9 +37,11 @@ class SAC(object):
         save_directory=Path("src/drl_navigation_ros2/models/SAC"),
         model_name="SAC",
         load_directory=Path("src/drl_navigation_ros2/models/SAC"),
+        is_unitree_dog=false,
     ):
         super().__init__()
 
+        self.is_unitree_dog=is_unitree_dog
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_range = (-max_action, max_action)
@@ -111,11 +113,11 @@ class SAC(object):
         self.actor.train(True)
         self.critic.train(True)
         self.step = 0
-        # 添加唯一标识路径
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_dir = f"runs/{self.model_name}_{timestamp}"
     
-        self.writer = SummaryWriter(log_dir=log_dir, flush_secs=30)
+        self.writer = SummaryWriter()
+
+        if self.is_unitree_dog:
+
 
     def save(self, filename, directory):
         torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
@@ -257,7 +259,7 @@ class SAC(object):
         if step % self.critic_target_update_frequency == 0:
             utils.soft_update_params(self.critic, self.critic_target, self.critic_tau)
 
-    def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
+    def get_min_obs_distance_from_laser(self,latest_scan):
         # update the returned data from ROS into a form used for learning in the current model
         latest_scan = np.array(latest_scan) #latest_scan为270度中540个激光扫描点离智能体的距离
 
@@ -268,16 +270,22 @@ class SAC(object):
         bin_size = int(np.ceil(len(latest_scan) / max_bins)) # 计算每个分箱的扫描点数量
 
         # Initialize the list to store the minimum values of each bin
-        min_values = []
+        min_obs_distance = []
 
         # Loop through the data and create bins
         for i in range(0, len(latest_scan), bin_size):
             # Get the current bin
             bin = latest_scan[i : i + min(bin_size, len(latest_scan) - i)]
-            # Find the minimum value in the current bin and append it to the min_values list
-            min_values.append(min(bin))
-        state = min_values + [distance, cos, sin] + [action[0], action[1]]
+            # Find the minimum value in the current bin and append it to the min_obs_distance list
+            min_obs_distance.append(min(bin))
+        
+        return min_obs_distance
 
+    def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
+        min_obs_distance = latest_scan
+        if not self.is_unitree_dog: # 如果当前模型用于仿真环境
+            min_obs_distance = get_min_obs_distance_from_laser(latest_scan)
+        state = min_obs_distance + [distance, cos, sin] + [action[0], action[1]]
         assert len(state) == self.state_dim
         terminal = 1 if collision or goal else 0
 
