@@ -26,7 +26,7 @@ def main(args=None):
     nr_eval_episodes = 10  # 用训练好的模型运行nr_eval_episodes个完整的回合（episodes）以评估模型性能。默认值为10
     # 训练整体思路是：一个轮次中，让智能体跑多个回合，这多个回合的数据在训练中被使用，训练时通过抽取回合数据来更新模型
     # max number of epochs. 
-    max_epochs = 100  # 设置整个训练过程的最大迭代次数。默认值为100。
+    max_epochs = 300  # 设置整个训练过程的最大迭代次数。默认值为100。
     # starting epoch number
     epoch = 0  # 当前训练轮次计数器
     # how many episodes to run in single epoch
@@ -44,15 +44,15 @@ def main(args=None):
     # starting step number
     steps = 0  # 当前回合的步数。默认值为0.
     # whether to load experiences from assets/data.yml
-    load_saved_buffer = False  # 是否加载预存经验池。默认值为True。
+    load_saved_buffer = True  # 是否加载预存经验池。默认值为True。
     # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
-    pretrain = False  # 是否执行预训练。默认值为True，同时要求load_saved_buffer也必须为True。
+    pretrain = True  # 是否执行预训练。默认值为True，同时要求load_saved_buffer也必须为True。
     # number of training iterations to run during pre-training
     pretraining_iterations = (
         50  # 预训练迭代次数，默认值50
     )
     # save the model every n training cycles
-    save_every = 5  # 每save_every次训练后保存一次模型，默认值100
+    save_every = 10  # 每save_every次训练后保存一次模型，默认值100
 
     model = SAC(
         state_dim=state_dim,
@@ -60,7 +60,7 @@ def main(args=None):
         max_action=max_action,
         device=device,
         save_every=save_every,
-        load_model=True,
+        load_model=False,
     )  # instantiate a model
     print("Model Loaded")
     ros = ROS_env()  # instantiate ROS environment
