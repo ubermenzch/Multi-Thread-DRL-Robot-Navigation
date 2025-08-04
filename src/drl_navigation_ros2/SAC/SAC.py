@@ -37,9 +37,10 @@ class SAC(object):
         save_directory=Path("src/drl_navigation_ros2/models/SAC"),
         model_name="SAC",
         load_directory=Path("src/drl_navigation_ros2/models/SAC"),
+        scan_range = 2.0
     ):
         super().__init__()
-
+        self.scan_range=scan_range
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_range = (-max_action, max_action)
@@ -257,21 +258,24 @@ class SAC(object):
 
     def prepare_state(self, latest_scan, distance, cos, sin, collision, goal, action):
         # update the returned data from ROS into a form used for learning in the current model
-        latest_scan = np.array(latest_scan) #latest_scan为270度中540个激光扫描点离智能体的距离
+        latest_scan = np.array(latest_scan) #latest_scan为180度中540个激光扫描点离智能体的距离
 
-        inf_mask = np.isinf(latest_scan) # 得到距离为无限的扫描点的下标
-        latest_scan[inf_mask] = 7.0 # 将所有距离为无限的扫描点的距离设置为7米（7米作为最大有效距离）
+        # inf_mask = np.isinf(latest_scan) # 得到距离为无限的扫描点的下标
+        # latest_scan[inf_mask] = self.scan_range # 将所有距离为无限的扫描点的距离设置为scan_range（最大有效距离）
+        latest_scan[latest_scan > self.scan_range] = self.scan_range # 把所有距离超过scan_range的值修改为scan_range
 
+        scan_len = len(latest_scan)
+        
         max_bins = self.state_dim - 5 # 最大的分箱数（激光扫描被分成几个区域）
-        bin_size = int(np.ceil(len(latest_scan) / max_bins)) # 计算每个分箱的扫描点数量
+        bin_size = int(np.ceil(scan_len / max_bins)) # 计算每个分箱的扫描点数量
 
         # Initialize the list to store the minimum values of each bin
         min_obs_distance = []
 
         # Loop through the data and create bins
-        for i in range(0, len(latest_scan), bin_size):
+        for i in range(0, scan_len, bin_size):
             # Get the current bin
-            bin = latest_scan[i : i + min(bin_size, len(latest_scan) - i)]
+            bin = latest_scan[i : i + min(bin_size, scan_len - i)]
             # Find the minimum value in the current bin and append it to the min_obs_distance list
             min_obs_distance.append(min(bin))
         state = min_obs_distance + [distance, cos, sin] + [action[0], action[1]]

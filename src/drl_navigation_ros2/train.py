@@ -9,7 +9,9 @@ import numpy as np
 from utils import record_eval_positions
 from pretrain_utils import Pretraining
 
-
+max_velocity = 1 # 最大速度
+neglect_angle = 40 # 前方视野左右两边忽略的角度（单位：度）
+scan_range = 4.5 
 def main(args=None):
     """Main training function"""
     action_dim = 2  # number of actions produced by the model
@@ -26,7 +28,7 @@ def main(args=None):
     nr_eval_episodes = 10  # 用训练好的模型运行nr_eval_episodes个完整的回合（episodes）以评估模型性能。默认值为10
     # 训练整体思路是：一个轮次中，让智能体跑多个回合，这多个回合的数据在训练中被使用，训练时通过抽取回合数据来更新模型
     # max number of epochs. 
-    max_epochs = 300  # 设置整个训练过程的最大迭代次数。默认值为100。
+    max_epochs = 500  # 设置整个训练过程的最大迭代次数。默认值为100。
     # starting epoch number
     epoch = 0  # 当前训练轮次计数器
     # how many episodes to run in single epoch
@@ -53,7 +55,7 @@ def main(args=None):
     )
     # save the model every n training cycles
     save_every = 10  # 每save_every次训练后保存一次模型，默认值100
-
+    load_save_path = Path("src/drl_navigation_ros2/models/SAC")
     model = SAC(
         state_dim=state_dim,
         action_dim=action_dim,
@@ -61,9 +63,12 @@ def main(args=None):
         device=device,
         save_every=save_every,
         load_model=False,
+        save_directory = load_save_path,
+        load_directory = load_save_path,
+        scan_range = scan_range,
     )  # instantiate a model
     print("Model Loaded")
-    ros = ROS_env()  # instantiate ROS environment
+    ros = ROS_env(neglect_angle = neglect_angle)  # instantiate ROS environment
     print("ROS Environment Initialized")
     eval_scenarios = record_eval_positions(
         n_eval_scenarios=nr_eval_episodes
@@ -103,7 +108,7 @@ def main(args=None):
         )  # get state a state representation from returned data from the environment
         action = model.get_action(state, True)  # get an action from the model
         a_in = [
-            (action[0] + 1) / 2,
+            (action[0] + 1) / (2/ max_velocity),
             action[1],
         ]
 
@@ -166,7 +171,10 @@ def eval(model, env, scenarios, epoch, max_steps):
             if terminal:
                 break
             action = model.get_action(state, False)
-            a_in = [(action[0] + 1) / 2, action[1]]
+            a_in = [
+                (action[0] + 1) / (2/ max_velocity),
+                action[1],
+            ]
             latest_scan, distance, cos, sin, collision, goal, a, reward = env.step(
                 lin_velocity=a_in[0], ang_velocity=a_in[1]
             )

@@ -24,6 +24,7 @@ class ROS_env:
         target_reached_delta=0.5,
         collision_delta=0.4,
         args=None,
+        neglect_angle = 40
     ):
         rclpy.init(args=args)
         self.cmd_vel_publisher = CmdVelPublisher()
@@ -46,8 +47,13 @@ class ROS_env:
         self.target_reached_delta = target_reached_delta
         self.collision_delta = collision_delta
         self.target = self.set_target_position([0.0, 0.0])
+        self.step_count = 0
+        self.env_count = 0
+        self.collision_count = 0
+        self.neglect_angle = neglect_angle
 
     def step(self, lin_velocity=0.0, ang_velocity=0.1):
+        self.step_count+=1
         self.cmd_vel_publisher.publish_cmd_vel(lin_velocity, ang_velocity)
         self.physics_client.unpause_physics()
         time.sleep(0.1)
@@ -60,6 +66,10 @@ class ROS_env:
             latest_orientation,
         ) = self.sensor_subscriber.get_latest_sensor()
 
+        # 裁剪掉忽略的视野
+        neglect_scan = int(np.ceil((self.neglect_angle/180)*len(latest_scan)))
+        latest_scan = latest_scan[neglect_scan:len(latest_scan)-neglect_scan]
+
         distance, cos, sin, _ = self.get_dist_sincos(
             latest_position, latest_orientation
         )
@@ -71,6 +81,8 @@ class ROS_env:
         return latest_scan, distance, cos, sin, collision, goal, action, reward
 
     def reset(self):
+        self.env_count += 1
+        self.step_count = 0  # 重置计步
         self.world_reset.reset_world()
         action = [0.0, 0.0]
         self.cmd_vel_publisher.publish_cmd_vel(
@@ -211,15 +223,18 @@ class ROS_env:
 
         return distance, cos, sin, angle
 
-    @staticmethod
-    def get_reward(goal, collision, action, laser_scan):
+    def get_reward(self,goal, collision, action, laser_scan):
         if goal:
-            return 100.0
+            base_reward = 100
+            return base_reward * np.exp(-0.01 * self.step_count)  # 指数型奖励，用时越少奖励越高
         elif collision:
-            return -100.0
+            base_penalty = -100
+            self.collision_count += 1
+            collision_rate = self.collision_count / self.env_count if self.env_count > 0 else 0
+            return base_penalty * np.exp(collision_rate)  # 惩罚随碰撞率增加
         else:
-            r3 = lambda x: 1.35 - x if x < 1.35 else 0.0
-            return action[0] - abs(action[1]) / 2 - r3(min(laser_scan)) / 2
+            r3 = lambda x: 1.5 - x if x < 1.5 else 0.0
+            return action[0] - abs(action[1])/2 - r3(min(laser_scan)) / 2
 
     @staticmethod
     def cossin(vec1, vec2):
