@@ -4,7 +4,7 @@
 # ===================== 核心设置 =====================
 LOGFILE="$HOME/DRL-Robot-Navigation-ROS2/train.log"  # 统一日志文件
 XVFB_DISPLAY=":99"                                   # 虚拟显示端口
-GAZEBO_WAIT_TIME=10                                 # Gazebo启动等待时间
+GAZEBO_WAIT_TIME=5                                 # Gazebo启动等待时间
 
 # ===================== 初始化日志 =====================
 init_logging() {

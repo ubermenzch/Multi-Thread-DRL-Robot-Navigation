@@ -13,18 +13,24 @@ from ros_nodes import (
 import numpy as np
 from geometry_msgs.msg import Pose, Twist
 from squaternion import Quaternion
+import math
 
 
 class ROS_env:
     def __init__(
         self,
         init_target_distance=2.0,
-        target_dist_increase=0.001,
-        max_target_dist=8.0,
-        target_reached_delta=0.5,
-        collision_delta=0.4,
+        target_dist_increase=0.01,
+        max_target_dist=30.0,
+        target_reached_delta=0.2,
+        collision_delta=0.1,
         args=None,
-        neglect_angle = 40
+        neglect_angle = 30, # 忽略的视野角度（单位度）
+        scan_range = 4.5,
+        max_steps = 300,
+        world_size = 30, # 单位米
+        obs_min_dist = 4,  # 障碍物圆心最小距离（单位米）
+        obs_num = 30 # 默认30
     ):
         rclpy.init(args=args)
         self.cmd_vel_publisher = CmdVelPublisher()
@@ -34,25 +40,25 @@ class ROS_env:
         self.world_reset = ResetWorldClient()
         self.physics_client = PhysicsClient()
         self.publish_target = MarkerPublisher()
-        self.element_positions = [
-            [-2.93, 3.17],
-            [2.86, -3.0],
-            [-2.77, -0.96],
-            [2.83, 2.93],
-        ]
+        self.element_positions = []
         self.sensor_subscriber = SensorSubscriber()
         self.target_dist = init_target_distance
         self.target_dist_increase = target_dist_increase
         self.max_target_dist = max_target_dist
         self.target_reached_delta = target_reached_delta
         self.collision_delta = collision_delta
-        self.target = self.set_target_position([0.0, 0.0])
         self.step_count = 0
         self.env_count = 0
         self.collision_count = 0
         self.neglect_angle = neglect_angle
+        self.scan_range = scan_range
+        self.max_steps = max_steps
+        self.world_size = world_size  # 单位米
+        self.obs_min_dist = obs_min_dist  # 障碍物圆心最小距离（单位米）
+        self.obs_num  = obs_num
+        self.reset()
 
-    def step(self, lin_velocity=0.0, ang_velocity=0.1):
+    def step(self, lin_velocity=0.0, ang_velocity=0.0):
         self.step_count+=1
         self.cmd_vel_publisher.publish_cmd_vel(lin_velocity, ang_velocity)
         self.physics_client.unpause_physics()
@@ -66,35 +72,29 @@ class ROS_env:
             latest_orientation,
         ) = self.sensor_subscriber.get_latest_sensor()
 
+        latest_scan = np.array(latest_scan) 
         # 裁剪掉忽略的视野
         neglect_scan = int(np.ceil((self.neglect_angle/180)*len(latest_scan)))
         latest_scan = latest_scan[neglect_scan:len(latest_scan)-neglect_scan]
-
+        latest_scan[latest_scan > self.scan_range] = self.scan_range # 把所有距离超过scan_range的值修改为scan_range
+        #print(f" Laser scan data: {latest_scan}")
         distance, cos, sin, _ = self.get_dist_sincos(
             latest_position, latest_orientation
         )
         collision = self.check_collision(latest_scan)
         goal = self.check_target(distance, collision)
         action = [lin_velocity, ang_velocity]
-        reward = self.get_reward(goal, collision, action, latest_scan)
+        reward = self.get_reward(goal, collision, action, latest_scan,distance,cos,sin)
 
         return latest_scan, distance, cos, sin, collision, goal, action, reward
 
     def reset(self):
-        self.env_count += 1
         self.step_count = 0  # 重置计步
         self.world_reset.reset_world()
         action = [0.0, 0.0]
         self.cmd_vel_publisher.publish_cmd_vel(
             linear_velocity=action[0], angular_velocity=action[1]
         )
-
-        self.element_positions = [
-            [-2.93, 3.17],
-            [2.86, -3.0],
-            [-2.77, -0.96],
-            [2.83, 2.93],
-        ]
         self.set_positions()
 
         self.publish_target.publish(self.target[0], self.target[1])
@@ -122,40 +122,44 @@ class ROS_env:
 
     def set_target_position(self, robot_position):
         pos = False
+        bias = self.world_size/2 - 0.5 # 目标生成位置偏移范围（-0.5是安全阈值，避免目标生成在围墙上）
         while not pos:
             x = np.clip(
                 robot_position[0]
                 + np.random.uniform(-self.target_dist, self.target_dist),
-                -4.0,
-                4.0,
+                -bias,
+                bias,
             )
             y = np.clip(
                 robot_position[1]
                 + np.random.uniform(-self.target_dist, self.target_dist),
-                -4.0,
-                4.0,
+                -bias,
+                bias,
             )
-            pos = self.check_position(x, y, 1.2)
+            pos = self.check_position(x, y, self.obs_min_dist)
         self.element_positions.append([x, y])
         return [x, y]
 
     def set_random_position(self, name):
+        bias = self.world_size/2-self.obs_min_dist/2
         angle = np.random.uniform(-np.pi, np.pi)
         pos = False
         while not pos:
-            x = np.random.uniform(-4.0, 4.0)
-            y = np.random.uniform(-4.0, 4.0)
-            pos = self.check_position(x, y, 1.8)
+            x = np.random.uniform(-bias, bias)
+            y = np.random.uniform(-bias, bias)
+            pos = self.check_position(x, y, self.obs_min_dist)
+        #print(f"Set position for {name}: x={x}, y={y}, angle={angle}")
         self.element_positions.append([x, y])
         self.set_position(name, x, y, angle)
 
     def set_robot_position(self):
+        bias = self.world_size/2 - 1 # 机器人生成位置偏移范围（-1是安全阈值，避免机器人生成在围墙上）
         angle = np.random.uniform(-np.pi, np.pi)
         pos = False
         while not pos:
-            x = np.random.uniform(-4.0, 4.0)
-            y = np.random.uniform(-4.0, 4.0)
-            pos = self.check_position(x, y, 1.8)
+            x = np.random.uniform(-bias, bias)
+            y = np.random.uniform(-bias, bias)
+            pos = self.check_position(x, y, self.obs_min_dist)
         self.set_position("turtlebot3_waffle", x, y, angle)
         return x, y
 
@@ -173,13 +177,22 @@ class ROS_env:
         self.robot_state_publisher.set_state(name, pose)
         rclpy.spin_once(self.robot_state_publisher)
 
-    def set_positions(self):
-        for i in range(4, 8):
-            name = "obstacle" + str(i + 1)
-            self.set_random_position(name)
-
+    def set_spawn_and_target_position(self):
         robot_position = self.set_robot_position()
         self.target = self.set_target_position(robot_position)
+        self.element_positions.append(robot_position)
+        # print(f"Robot position set to: {robot_position}")
+        # print(f"Target position set to: {self.target}")
+
+        return robot_position, self.target
+
+    def set_positions(self):
+        self.element_positions = []
+        self.set_spawn_and_target_position()
+
+        for i in range(0, self.obs_num):
+            name = "obstacle" + str(i + 1)
+            self.set_random_position(name)
 
     def check_position(self, x, y, min_dist):
         pos = True
@@ -223,18 +236,45 @@ class ROS_env:
 
         return distance, cos, sin, angle
 
-    def get_reward(self,goal, collision, action, laser_scan):
+    def get_reward(self,goal, collision, action, laser_scan,distance, cos, sin):
         if goal:
-            base_reward = 100
-            return base_reward * np.exp(-0.01 * self.step_count)  # 指数型奖励，用时越少奖励越高
+            self.env_count+=1
+            base_goal_reward = 100.0  # 基础目标奖励
+            # return base_goal_reward*np.exp(-0.01 * self.step_count)  # 指数型奖励，用时越少奖励越高
+            return base_goal_reward  + 180 + 147  # 达到目标基础奖励100+避障奖励180+角速度惩罚147，保证到达终点奖励非负
         elif collision:
-            base_penalty = -100
+            self.env_count+=1
+            base_collision_penalty = -100.0  # 基础碰撞惩罚
             self.collision_count += 1
             collision_rate = self.collision_count / self.env_count if self.env_count > 0 else 0
-            return base_penalty * np.exp(collision_rate)  # 惩罚随碰撞率增加
+            print(f"Collision rate: {collision_rate:.2f}, Total collisions: {self.collision_count}, Total environments: {self.env_count}")
+            # 惩罚随碰撞率增加，碰撞惩罚最大为base_collision_penalty*e=-271.8
+            return base_collision_penalty * np.exp(collision_rate)  
         else:
-            r3 = lambda x: 1.5 - x if x < 1.5 else 0.0
-            return action[0] - abs(action[1])/2 - r3(min(laser_scan)) / 2
+            # 计算最近障碍物距离惩罚
+            obs_penalty_base = -1.0
+            obs_x = np.mean(laser_scan)
+            obs_c = -2.0 # exp变量的系数
+            obs_penalty = np.exp(obs_c*obs_x) # 400步下，每步平均障碍物距离最小时，该惩罚总为-180
+
+            #计算角速度惩罚
+            base_yawrate_penalty = -1.0
+            yawrate_x = abs(action[1])
+            yawrate_c = 0.4 # exp变量的系数
+            yawrate_penalty = base_yawrate_penalty*(np.exp(yawrate_c*yawrate_x)-1) # 400步下，每步角速度值最大时，该惩罚总为-147
+            # # 计算角度偏移惩罚
+            # # 计算当前角度（弧度）
+            # current_angle = math.atan2(sin, cos)
+            # # 理想角度（正对目标点）
+            # target_angle = 0.0
+            # # 计算最小角度差（考虑圆周性）
+            # angle_diff = abs(math.atan2(math.sin(current_angle - target_angle), 
+            #                         math.cos(current_angle - target_angle)))
+            # # 角度惩罚（假设角度差在0到π范围内，超过π则取反）
+            # angle_base_penalty = -1.0 # 假设角度偏差基础惩罚
+            # angle_penalty = angle_base_penalty * (1 - math.cos(angle_diff)) / 2
+            # 线速度奖励（线速度越大奖励越大)-角速度绝对值惩罚（绝对值越大惩罚越大)-障碍物距离惩罚（障碍物距离越小惩罚越大）
+            return yawrate_penalty + obs_penalty
 
     @staticmethod
     def cossin(vec1, vec2):

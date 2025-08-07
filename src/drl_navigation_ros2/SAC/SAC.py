@@ -37,10 +37,8 @@ class SAC(object):
         save_directory=Path("src/drl_navigation_ros2/models/SAC"),
         model_name="SAC",
         load_directory=Path("src/drl_navigation_ros2/models/SAC"),
-        scan_range = 2.0
     ):
         super().__init__()
-        self.scan_range=scan_range
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_range = (-max_action, max_action)
@@ -262,7 +260,6 @@ class SAC(object):
 
         # inf_mask = np.isinf(latest_scan) # 得到距离为无限的扫描点的下标
         # latest_scan[inf_mask] = self.scan_range # 将所有距离为无限的扫描点的距离设置为scan_range（最大有效距离）
-        latest_scan[latest_scan > self.scan_range] = self.scan_range # 把所有距离超过scan_range的值修改为scan_range
 
         scan_len = len(latest_scan)
         

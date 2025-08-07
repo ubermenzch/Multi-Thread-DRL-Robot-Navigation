@@ -204,3 +204,14 @@ def wgs2bd(wgsLat, wgsLng):
 # 百度坐标系转世界大地坐标系
 def bd2wgs(bdLat, bdLng):
     return gcj2wgs(*bd2gcj(bdLat, bdLng))
+
+def action_limit(action, max_velocity=1.0, max_yawrate=45.0):
+    """
+    限制动作的范围
+    :param action: 动作数组 [线速度, 角速度] 线速度范围 [0, 1]（单位：米/秒），角速度范围 [-1, 1](单位：弧度/秒)
+    :return: 限制后的动作数组
+    """
+    return [
+            (action[0] + 1) / (2/ max_velocity), #线速度限制到 [0, max_velocity]（单位：米/秒）
+            action[1]*(max_yawrate/180)*math.pi, #角速度限制到 [-max_yawrate, max_yawrate]（单位：度/秒）
+        ]

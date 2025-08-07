@@ -7,11 +7,14 @@ from replay_buffer import ReplayBuffer
 import torch
 import numpy as np
 from utils import record_eval_positions
+import utils
 from pretrain_utils import Pretraining
 
-max_velocity = 1 # 最大速度
-neglect_angle = 40 # 前方视野左右两边忽略的角度（单位：度）
+max_velocity = 1.0 # 最大速度
+neglect_angle = 30 # 前方视野左右两边忽略的角度（单位：度）
+max_yawrate = 45.0 # 最大偏航率（单位：度/秒）
 scan_range = 4.5 
+is_code_debug = False  # 是否为调试代码
 def main(args=None):
     """Main training function"""
     action_dim = 2  # number of actions produced by the model
@@ -42,20 +45,31 @@ def main(args=None):
     # batch size for each training iteration
     batch_size = 40  # 从经验池中随机抽取batch_size条经验作为一个训练批次来对模型参数进行更新。默认值为40.
     # maximum number of steps in single episode
-    max_steps = 300  # 限制每个回合最多执行max_steps步操作，超过会强制结束回合。默认值为300.
+    max_steps = 600  # 限制每个回合最多执行max_steps步操作，超过会强制结束回合。默认值为300.
     # starting step number
     steps = 0  # 当前回合的步数。默认值为0.
     # whether to load experiences from assets/data.yml
-    load_saved_buffer = True  # 是否加载预存经验池。默认值为True。
+    load_saved_buffer = False  # 是否加载预存经验池。默认值为True。
     # whether to use the loaded experiences to pre-train the model (load_saved_buffer must be True)
-    pretrain = True  # 是否执行预训练。默认值为True，同时要求load_saved_buffer也必须为True。
+    pretrain = False  # 是否执行预训练。默认值为True，同时要求load_saved_buffer也必须为True。
     # number of training iterations to run during pre-training
     pretraining_iterations = (
         50  # 预训练迭代次数，默认值50
     )
+    
     # save the model every n training cycles
     save_every = 10  # 每save_every次训练后保存一次模型，默认值100
+    
     load_save_path = Path("src/drl_navigation_ros2/models/SAC")
+
+    if is_code_debug:
+        max_epochs = 10
+        episodes_per_epoch = 5
+        train_every_n = 1
+        training_iterations = 10
+        load_saved_buffer = False
+        pretrain = False
+
     model = SAC(
         state_dim=state_dim,
         action_dim=action_dim,
@@ -65,10 +79,12 @@ def main(args=None):
         load_model=False,
         save_directory = load_save_path,
         load_directory = load_save_path,
-        scan_range = scan_range,
     )  # instantiate a model
     print("Model Loaded")
-    ros = ROS_env(neglect_angle = neglect_angle)  # instantiate ROS environment
+    ros = ROS_env(neglect_angle = neglect_angle,
+    scan_range = scan_range,
+    max_steps = max_steps,
+    )  # instantiate ROS environment
     print("ROS Environment Initialized")
     eval_scenarios = record_eval_positions(
         n_eval_scenarios=nr_eval_episodes
@@ -96,25 +112,25 @@ def main(args=None):
         print("Load Saved Buffer Done")
     else:
         replay_buffer = ReplayBuffer(
-            buffer_size=5e3, random_seed=42
+            buffer_size=5e5, random_seed=42
         )  # if not experiences are loaded, instantiate an empty buffer
     latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
         lin_velocity=0.0, ang_velocity=0.0
     )  # get the initial step state
-
+    print("Epoch=0 Episode=0")
     while epoch < max_epochs:  # train until max_epochs is reached
         state, terminal = model.prepare_state(
             latest_scan, distance, cos, sin, collision, goal, a
         )  # get state a state representation from returned data from the environment
         action = model.get_action(state, True)  # get an action from the model
-        a_in = [
-            (action[0] + 1) / (2/ max_velocity),
-            action[1],
-        ]
-
+        a_in = utils.action_limit(
+            action, max_velocity=max_velocity, max_yawrate=max_yawrate
+        )
+        #a_in = [1.0,0.0]
         latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
             lin_velocity=a_in[0], ang_velocity=a_in[1]
         )  # get data from the environment
+        #print("cos:", cos, "sin:", sin, "distance:", distance)
         next_state, terminal = model.prepare_state(
             latest_scan, distance, cos, sin, collision, goal, a
         )  # get a next state representation
@@ -127,13 +143,16 @@ def main(args=None):
         ):  # reset environment of terminal stat ereached, or max_steps were taken
             latest_scan, distance, cos, sin, collision, goal, a, reward = ros.reset()
             episode += 1
+            # print(f"Epoch={epoch} Episode={episode}")
             if episode % train_every_n == 0:
+                print(
+                    f"Training model at epoch {epoch}, episode {episode}"
+                )
                 model.train(
                     replay_buffer=replay_buffer,
                     iterations=training_iterations,
                     batch_size=batch_size,
                 )  # train the model and update its parameters
-
             steps = 0
         else:
             steps += 1
@@ -171,10 +190,9 @@ def eval(model, env, scenarios, epoch, max_steps):
             if terminal:
                 break
             action = model.get_action(state, False)
-            a_in = [
-                (action[0] + 1) / (2/ max_velocity),
-                action[1],
-            ]
+            a_in = utils.action_limit(
+                action, max_velocity=max_velocity, max_yawrate=max_yawrate
+            )
             latest_scan, distance, cos, sin, collision, goal, a, reward = env.step(
                 lin_velocity=a_in[0], ang_velocity=a_in[1]
             )

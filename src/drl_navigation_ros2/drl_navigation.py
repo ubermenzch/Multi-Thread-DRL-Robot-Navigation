@@ -15,13 +15,13 @@ import numpy as np
 
 
 class Agent:
-    def __init__(self,robot_type,is_indoor_test=False,scan_range=5.0):
+    def __init__(self,robot_type,is_indoor_test=False,scan_range=4.5):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if torch.cuda.is_available():
             print("GPU CUDA Ready")
         else:
             print("CPU CUDA Ready")
-        self.robot_type = robot_type # robot_type = {ysc,unitree}
+        self.robot_type = robot_type # robot_type = {ysc,unictree}
         self.is_indoor_test=is_indoor_test
         self.action_dim = 2  # number of actions produced by the model
         self.max_action = 1  # maximum absolute value of output actions
