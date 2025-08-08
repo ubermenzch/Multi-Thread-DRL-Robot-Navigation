@@ -9,12 +9,14 @@ import numpy as np
 from utils import record_eval_positions
 import utils
 from pretrain_utils import Pretraining
+from datetime import datetime
 
 max_velocity = 1.0 # 最大速度
 neglect_angle = 30 # 前方视野左右两边忽略的角度（单位：度）
 max_yawrate = 45.0 # 最大偏航率（单位：度/秒）
 scan_range = 4.5 
 is_code_debug = False  # 是否为调试代码
+is_eval = False  # whether to run evaluation after training
 def main(args=None):
     """Main training function"""
     action_dim = 2  # number of actions produced by the model
@@ -45,7 +47,7 @@ def main(args=None):
     # batch size for each training iteration
     batch_size = 40  # 从经验池中随机抽取batch_size条经验作为一个训练批次来对模型参数进行更新。默认值为40.
     # maximum number of steps in single episode
-    max_steps = 600  # 限制每个回合最多执行max_steps步操作，超过会强制结束回合。默认值为300.
+    max_steps = 1500  # 限制每个回合最多执行max_steps步操作，超过会强制结束回合。默认值为300.
     # starting step number
     steps = 0  # 当前回合的步数。默认值为0.
     # whether to load experiences from assets/data.yml
@@ -56,10 +58,11 @@ def main(args=None):
     pretraining_iterations = (
         50  # 预训练迭代次数，默认值50
     )
+    load_model = True
     
     # save the model every n training cycles
     save_every = 10  # 每save_every次训练后保存一次模型，默认值100
-    
+
     load_save_path = Path("src/drl_navigation_ros2/models/SAC")
 
     if is_code_debug:
@@ -70,13 +73,18 @@ def main(args=None):
         load_saved_buffer = False
         pretrain = False
 
+    if pretrain:
+        load_saved_buffer=True
+    else:
+        load_saved_buffer=False
+
     model = SAC(
         state_dim=state_dim,
         action_dim=action_dim,
         max_action=max_action,
         device=device,
         save_every=save_every,
-        load_model=False,
+        load_model=load_model,
         save_directory = load_save_path,
         load_directory = load_save_path,
     )  # instantiate a model
@@ -117,7 +125,9 @@ def main(args=None):
     latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
         lin_velocity=0.0, ang_velocity=0.0
     )  # get the initial step state
-    print("Epoch=0 Episode=0")
+    print("="*20+f"Epoch 0"+"="*20)
+    total_reward = 0.0
+    episode_reward = 0.0
     while epoch < max_epochs:  # train until max_epochs is reached
         state, terminal = model.prepare_state(
             latest_scan, distance, cos, sin, collision, goal, a
@@ -130,6 +140,7 @@ def main(args=None):
         latest_scan, distance, cos, sin, collision, goal, a, reward = ros.step(
             lin_velocity=a_in[0], ang_velocity=a_in[1]
         )  # get data from the environment
+        episode_reward += reward
         #print("cos:", cos, "sin:", sin, "distance:", distance)
         next_state, terminal = model.prepare_state(
             latest_scan, distance, cos, sin, collision, goal, a
@@ -141,13 +152,25 @@ def main(args=None):
         if (
             terminal or steps == max_steps
         ):  # reset environment of terminal stat ereached, or max_steps were taken
-            latest_scan, distance, cos, sin, collision, goal, a, reward = ros.reset()
+            total_reward += episode_reward
+            # target_distance
+            td = np.linalg.norm([ros.target[0] - ros.episode_start_position[0], ros.target[1] - ros.episode_start_position[1]])
+            if goal:
+                episode_ending = "Goal"
+            elif collision:
+                episode_ending = "Collision"
+            else:
+                episode_ending= "Timeout"
+            current_time = datetime.now()
+            print(f"{current_time.strftime('%Y-%m-%d %H:%M:%S')} Episode: {episode} Reward: {episode_reward:.2f} Target Distance: {td:.2f} Steps: {steps} End: {episode_ending}")
+            episode_reward = 0.0
+
             episode += 1
-            # print(f"Epoch={epoch} Episode={episode}")
+            latest_scan, distance, cos, sin, collision, goal, a, reward = ros.reset()
             if episode % train_every_n == 0:
-                print(
-                    f"Training model at epoch {epoch}, episode {episode}"
-                )
+                # print(
+                #     f"Training model at epoch {epoch}, episode {episode}"
+                # )
                 model.train(
                     replay_buffer=replay_buffer,
                     iterations=training_iterations,
@@ -156,19 +179,23 @@ def main(args=None):
             steps = 0
         else:
             steps += 1
-
-        if (
-            episode + 1
-        ) % episodes_per_epoch == 0:  # if epoch is concluded, run evaluation
+        if (episode + 1) % episodes_per_epoch == 0:  # if epoch is concluded, run evaluation
             episode = 0
+            print(f"Epoch {epoch} Average Reward: {total_reward / episodes_per_epoch}")
+            collision_rate = ros.collision_count / ros.env_count if ros.env_count > 0 else 0
+            goal_rate = ros.goal_count / ros.env_count if ros.env_count > 0 else 0
+            print(f"Goal rate: {goal_rate:.3f} Collision rate: {collision_rate:.3f} Timeout rate: {(1-goal_rate-collision_rate):.3f}")
+            total_reward = 0.0
             epoch += 1
-            eval(
-                model=model,
-                env=ros,
-                scenarios=eval_scenarios,
-                epoch=epoch,
-                max_steps=max_steps,
-            )  # run evaluation
+            print("="*20+f"Epoch {epoch}"+"="*20)
+            if is_eval:
+                eval(
+                    model=model,
+                    env=ros,
+                    scenarios=eval_scenarios,
+                    epoch=epoch,
+                    max_steps=max_steps,
+                )  # run evaluation
 
 
 def eval(model, env, scenarios, epoch, max_steps):

@@ -37,6 +37,7 @@ class SAC(object):
         save_directory=Path("src/drl_navigation_ros2/models/SAC"),
         model_name="SAC",
         load_directory=Path("src/drl_navigation_ros2/models/SAC"),
+        is_log=True,
     ):
         super().__init__()
         self.state_dim = state_dim

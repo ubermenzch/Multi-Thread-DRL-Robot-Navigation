@@ -2,13 +2,16 @@ from dataclasses import dataclass
 import numpy as np
 from builtin_interfaces.msg import Time
 import math
+from nav_msgs.msg import OccupancyGrid
+import sys
+import os
 
 """计算两个时间戳之间的纳秒差（stamp2 - stamp1）"""
 def get_time_diff_ns(stamp1: Time, stamp2: Time) -> int:
     # 将两个时间都转换为纳秒总数
     total_ns1 = stamp1.sec * 10**9 + stamp1.nanosec
     total_ns2 = stamp2.sec * 10**9 + stamp2.nanosec
-    return  total_ns1 - total_ns2
+    return total_ns1 - total_ns2
 
 @dataclass
 class pos_data:
@@ -16,7 +19,6 @@ class pos_data:
     x = None
     y = None
     angle = None
-
 
 def check_position(x, y, element_positions, min_dist):
     pos = True
@@ -26,7 +28,6 @@ def check_position(x, y, element_positions, min_dist):
         if distance < min_dist:
             pos = False
     return pos
-
 
 def set_random_position(name, element_positions):
     angle = np.random.uniform(-np.pi, np.pi)
@@ -42,7 +43,6 @@ def set_random_position(name, element_positions):
     eval_element.y = y
     eval_element.angle = angle
     return eval_element
-
 
 def record_eval_positions(n_eval_scenarios=10):
     scenarios = []
@@ -64,7 +64,6 @@ def record_eval_positions(n_eval_scenarios=10):
 
     return scenarios
 
-
 __all__ = ['wgs2gcj', 'gcj2wgs', 'gcj2wgs_exact',
            'distance', 'gcj2bd', 'bd2gcj', 'wgs2bd', 'bd2wgs']
 
@@ -73,31 +72,29 @@ earthR = 6378137.0
 def outOfChina(lat, lng):
     return not (72.004 <= lng <= 137.8347 and 0.8293 <= lat <= 55.8271)
 
-
 def transform(x, y):
-	xy = x * y
-	absX = math.sqrt(abs(x))
-	xPi = x * math.pi
-	yPi = y * math.pi
-	d = 20.0*math.sin(6.0*xPi) + 20.0*math.sin(2.0*xPi)
+    xy = x * y
+    absX = math.sqrt(abs(x))
+    xPi = x * math.pi
+    yPi = y * math.pi
+    d = 20.0*math.sin(6.0*xPi) + 20.0*math.sin(2.0*xPi)
 
-	lat = d
-	lng = d
+    lat = d
+    lng = d
 
-	lat += 20.0*math.sin(yPi) + 40.0*math.sin(yPi/3.0)
-	lng += 20.0*math.sin(xPi) + 40.0*math.sin(xPi/3.0)
+    lat += 20.0*math.sin(yPi) + 40.0*math.sin(yPi/3.0)
+    lng += 20.0*math.sin(xPi) + 40.0*math.sin(xPi/3.0)
 
-	lat += 160.0*math.sin(yPi/12.0) + 320*math.sin(yPi/30.0)
-	lng += 150.0*math.sin(xPi/12.0) + 300.0*math.sin(xPi/30.0)
+    lat += 160.0*math.sin(yPi/12.0) + 320*math.sin(yPi/30.0)
+    lng += 150.0*math.sin(xPi/12.0) + 300.0*math.sin(xPi/30.0)
 
-	lat *= 2.0 / 3.0
-	lng *= 2.0 / 3.0
+    lat *= 2.0 / 3.0
+    lng *= 2.0 / 3.0
 
-	lat += -100.0 + 2.0*x + 3.0*y + 0.2*y*y + 0.1*xy + 0.2*absX
-	lng += 300.0 + x + 2.0*y + 0.1*x*x + 0.1*xy + 0.1*absX
+    lat += -100.0 + 2.0*x + 3.0*y + 0.2*y*y + 0.1*xy + 0.2*absX
+    lng += 300.0 + x + 2.0*y + 0.1*x*x + 0.1*xy + 0.1*absX
 
-	return lat, lng
-
+    return lat, lng
 
 def delta(lat, lng):
     ee = 0.00669342162296594323
@@ -110,7 +107,6 @@ def delta(lat, lng):
     dLng = (dLng * 180.0) / (earthR / sqrtMagic * math.cos(radLat) * math.pi)
     return dLat, dLng
 
-# 世界大地坐标系转国测局坐标系
 def wgs2gcj(wgsLat, wgsLng):
     if outOfChina(wgsLat, wgsLng):
         return wgsLat, wgsLng
@@ -118,7 +114,6 @@ def wgs2gcj(wgsLat, wgsLng):
         dlat, dlng = delta(wgsLat, wgsLng)
         return wgsLat + dlat, wgsLng + dlng
 
-# 国测局坐标系转世界大地坐标系
 def gcj2wgs(gcjLat, gcjLng):
     if outOfChina(gcjLat, gcjLng):
         return gcjLat, gcjLng
@@ -126,7 +121,6 @@ def gcj2wgs(gcjLat, gcjLng):
         dlat, dlng = delta(gcjLat, gcjLng)
         return gcjLat - dlat, gcjLng - dlng
 
-# 更为准确的国测局坐标系转世界大地坐标系
 def gcj2wgs_exact(gcjLat, gcjLng):
     initDelta = 0.01
     threshold = 0.000001
@@ -153,8 +147,7 @@ def gcj2wgs_exact(gcjLat, gcjLng):
             mLng = wgsLng
     return wgsLat, wgsLng
 
-# 已测得计算两个国测局坐标系的点之间的距离是准的。其他坐标系之间的点的距离未测。
-def distance(latA, lngA, latB, lngB): # 要求两点所属同一坐标系
+def distance(latA, lngA, latB, lngB):
     pi180 = math.pi / 180
     arcLatA = latA * pi180
     arcLatB = latB * pi180
@@ -170,7 +163,6 @@ def distance(latA, lngA, latB, lngB): # 要求两点所属同一坐标系
     distance = alpha * earthR
     return distance
 
-# 国测局坐标系转百度坐标系
 def gcj2bd(gcjLat, gcjLng):
     if outOfChina(gcjLat, gcjLng):
         return gcjLat, gcjLng
@@ -183,7 +175,6 @@ def gcj2bd(gcjLat, gcjLng):
     bdLat = z * math.sin(theta) + 0.006
     return bdLat, bdLng
 
-# 百度坐标系转国测局坐标系
 def bd2gcj(bdLat, bdLng):
     if outOfChina(bdLat, bdLng):
         return bdLat, bdLng
@@ -196,12 +187,9 @@ def bd2gcj(bdLat, bdLng):
     gcjLat = z * math.sin(theta)
     return gcjLat, gcjLng
 
-# 世界大地坐标系转百度坐标系
 def wgs2bd(wgsLat, wgsLng):
     return gcj2bd(*wgs2gcj(wgsLat, wgsLng))
 
-
-# 百度坐标系转世界大地坐标系
 def bd2wgs(bdLat, bdLng):
     return gcj2wgs(*bd2gcj(bdLat, bdLng))
 
@@ -215,3 +203,56 @@ def action_limit(action, max_velocity=1.0, max_yawrate=45.0):
             (action[0] + 1) / (2/ max_velocity), #线速度限制到 [0, max_velocity]（单位：米/秒）
             action[1]*(max_yawrate/180)*math.pi, #角速度限制到 [-max_yawrate, max_yawrate]（单位：度/秒）
         ]
+
+def calculate_trajectory(start_pos, action, steps=10, step_size=0.2, resolution=0.1,edge_length=100):
+    """
+    根据动作计算机器狗预测轨迹 (修正坐标系)
+    
+    参数:
+        start_pos: 起始位置 (row, col) - 图像坐标系
+        action: 动作 [线速度, 角速度]
+        steps: 预测步数
+        step_size: 每步模拟的时间（秒）
+    
+    返回:
+        轨迹点列表 [(row1, col1), (row2, col2), ...] - 图像坐标系
+    """
+    if not action:
+        return []
+    
+    v, w = action  # 线速度(m/s), 角速度(rad/s)
+    
+    # 起始位置（图像坐标系）
+    x, y = start_pos  # (x,y)
+    
+    # 轨迹点集合（避免重复）
+    trajectory = []
+    
+    # 初始方向（朝向x轴正方向 - 向右）
+    theta = 0.0
+    
+    # 根据动作模拟轨迹（使用标准笛卡尔坐标系）
+    for _ in range(steps):
+        # 更新方向：w > 0 时逆时针旋转（向y正方向）
+        theta += w * step_size
+        
+        # 计算位移 (y方向使用减法适配图像坐标系)
+        dx = v * step_size * np.cos(theta) / resolution
+        dy = v * step_size * np.sin(theta) / resolution
+
+        x += dx
+        y += dy
+        
+        # 转换为整数网格坐标
+        index_x = int(math.floor(x))
+        index_y = int(math.floor(y))
+        #print(f"计算位置: ({index_x}, {index_y})")
+        
+        # 确保位置在网格范围内
+        if 0 <= index_x < edge_length and 0 <= index_y < edge_length:
+            # 添加轨迹点（避免重复）
+            point = (index_x, index_y)
+            if point not in trajectory:
+                trajectory.append(point)
+    
+    return trajectory

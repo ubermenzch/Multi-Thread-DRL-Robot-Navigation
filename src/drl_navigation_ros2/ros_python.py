@@ -22,15 +22,15 @@ class ROS_env:
         init_target_distance=2.0,
         target_dist_increase=0.01,
         max_target_dist=30.0,
-        target_reached_delta=0.2,
-        collision_delta=0.1,
+        target_reached_delta=0.4,
+        collision_delta=0.3,
         args=None,
         neglect_angle = 30, # 忽略的视野角度（单位度）
         scan_range = 4.5,
         max_steps = 300,
-        world_size = 30, # 单位米
+        world_size = 30, # 单位
         obs_min_dist = 4,  # 障碍物圆心最小距离（单位米）
-        obs_num = 30 # 默认30
+        obs_num = 25 # 默认30
     ):
         rclpy.init(args=args)
         self.cmd_vel_publisher = CmdVelPublisher()
@@ -48,7 +48,8 @@ class ROS_env:
         self.target_reached_delta = target_reached_delta
         self.collision_delta = collision_delta
         self.step_count = 0
-        self.env_count = 0
+        self.env_count = -1 # 初始值设置为-1抵消初始化的自增
+        self.goal_count = 0
         self.collision_count = 0
         self.neglect_angle = neglect_angle
         self.scan_range = scan_range
@@ -56,6 +57,8 @@ class ROS_env:
         self.world_size = world_size  # 单位米
         self.obs_min_dist = obs_min_dist  # 障碍物圆心最小距离（单位米）
         self.obs_num  = obs_num
+        self.target = None
+        self.episode_start_position = None  # 记录每个episode开始时的机器人位置
         self.reset()
 
     def step(self, lin_velocity=0.0, ang_velocity=0.0):
@@ -71,8 +74,11 @@ class ROS_env:
             latest_position,
             latest_orientation,
         ) = self.sensor_subscriber.get_latest_sensor()
-
+        if latest_scan is None:
+            # 创建默认激光数据（360个点，距离10米）
+            latest_scan = [self.collision_delta+0.1] * 180
         latest_scan = np.array(latest_scan) 
+        # print(len(latest_scan))
         # 裁剪掉忽略的视野
         neglect_scan = int(np.ceil((self.neglect_angle/180)*len(latest_scan)))
         latest_scan = latest_scan[neglect_scan:len(latest_scan)-neglect_scan]
@@ -89,13 +95,17 @@ class ROS_env:
         return latest_scan, distance, cos, sin, collision, goal, action, reward
 
     def reset(self):
+        self.env_count+=1
         self.step_count = 0  # 重置计步
         self.world_reset.reset_world()
         action = [0.0, 0.0]
         self.cmd_vel_publisher.publish_cmd_vel(
             linear_velocity=action[0], angular_velocity=action[1]
         )
-        self.set_positions()
+        position_set = self.set_positions()
+        while not position_set:
+            print("Failed to set positions, retrying...")
+            position_set = self.set_positions()
 
         self.publish_target.publish(self.target[0], self.target[1])
 
@@ -122,7 +132,7 @@ class ROS_env:
 
     def set_target_position(self, robot_position):
         pos = False
-        bias = self.world_size/2 - 0.5 # 目标生成位置偏移范围（-0.5是安全阈值，避免目标生成在围墙上）
+        bias = self.world_size/2 - 1 # 目标生成位置偏移范围（-1是安全阈值，避免目标生成在围墙上）
         while not pos:
             x = np.clip(
                 robot_position[0]
@@ -144,13 +154,20 @@ class ROS_env:
         bias = self.world_size/2-self.obs_min_dist/2
         angle = np.random.uniform(-np.pi, np.pi)
         pos = False
-        while not pos:
+        try_time = 0
+        try_max = 1000
+        while not pos and try_time < try_max:
+            try_time += 1
             x = np.random.uniform(-bias, bias)
             y = np.random.uniform(-bias, bias)
             pos = self.check_position(x, y, self.obs_min_dist)
-        #print(f"Set position for {name}: x={x}, y={y}, angle={angle}")
+        # print(f"Set position for {name}: x={x}, y={y}, angle={angle}")
+        # print("try time: ", try_time)
+        if try_time >= try_max:
+            return False  # 如果尝试次数超过最大值，返回False表示设置位置失败
         self.element_positions.append([x, y])
         self.set_position(name, x, y, angle)
+        return True  # 成功设置位置，返回True
 
     def set_robot_position(self):
         bias = self.world_size/2 - 1 # 机器人生成位置偏移范围（-1是安全阈值，避免机器人生成在围墙上）
@@ -178,13 +195,11 @@ class ROS_env:
         rclpy.spin_once(self.robot_state_publisher)
 
     def set_spawn_and_target_position(self):
-        robot_position = self.set_robot_position()
-        self.target = self.set_target_position(robot_position)
-        self.element_positions.append(robot_position)
+        self.episode_start_position = self.set_robot_position()
+        self.target = self.set_target_position(self.episode_start_position)
+        self.element_positions.append(self.episode_start_position)
         # print(f"Robot position set to: {robot_position}")
         # print(f"Target position set to: {self.target}")
-
-        return robot_position, self.target
 
     def set_positions(self):
         self.element_positions = []
@@ -192,7 +207,9 @@ class ROS_env:
 
         for i in range(0, self.obs_num):
             name = "obstacle" + str(i + 1)
-            self.set_random_position(name)
+            if not self.set_random_position(name):
+                return False  # 如果设置位置失败，返回False
+        return True  # 成功设置所有位置，返回True
 
     def check_position(self, x, y, min_dist):
         pos = True
@@ -218,6 +235,10 @@ class ROS_env:
 
     def get_dist_sincos(self, odom_position, odom_orientation):
         # Calculate robot heading from odometry data
+        # 确保里程计数据存在
+        if odom_position is None:
+            return self.target_reached_delta+0.1,1,0,0
+
         odom_x = odom_position.x
         odom_y = odom_position.y
         quaternion = Quaternion(
@@ -238,30 +259,33 @@ class ROS_env:
 
     def get_reward(self,goal, collision, action, laser_scan,distance, cos, sin):
         if goal:
-            self.env_count+=1
+            self.goal_count += 1
             base_goal_reward = 100.0  # 基础目标奖励
             # return base_goal_reward*np.exp(-0.01 * self.step_count)  # 指数型奖励，用时越少奖励越高
-            return base_goal_reward  + 180 + 147  # 达到目标基础奖励100+避障奖励180+角速度惩罚147，保证到达终点奖励非负
+            goal_reward = 1000
+            #print(f"Reached goal in {self.step_count} steps. Total goals: {self.goal_count}")
+            return  goal_reward # 达到目标基础奖励100+避障奖励180+角速度惩罚147，保证到达终点奖励非负
         elif collision:
-            self.env_count+=1
-            base_collision_penalty = -100.0  # 基础碰撞惩罚
+            base_collision_penalty = -1000.0  # 基础碰撞惩罚
             self.collision_count += 1
             collision_rate = self.collision_count / self.env_count if self.env_count > 0 else 0
-            print(f"Collision rate: {collision_rate:.2f}, Total collisions: {self.collision_count}, Total environments: {self.env_count}")
-            # 惩罚随碰撞率增加，碰撞惩罚最大为base_collision_penalty*e=-271.8
-            return base_collision_penalty * np.exp(collision_rate)  
+            # 惩罚随碰撞率增加，碰撞惩罚最大为base_collision_penalty*e=-542
+            collision_penalty = base_collision_penalty * np.exp(collision_rate)
+            print(f"Collision occurred! Total collisions: {self.collision_count}, Collision rate: {collision_rate:.3f}")
+            return collision_penalty
         else:
             # 计算最近障碍物距离惩罚
-            obs_penalty_base = -1.0
+            obs_penalty_base = -2
             obs_x = np.mean(laser_scan)
+            # print(f"Laser scan mean: {obs_x}")
             obs_c = -2.0 # exp变量的系数
-            obs_penalty = np.exp(obs_c*obs_x) # 400步下，每步平均障碍物距离最小时，该惩罚总为-180
+            obs_penalty = obs_penalty_base * np.exp(obs_c*obs_x) # 400步下，每步平均障碍物距离最小时，该惩罚总为-180
 
             #计算角速度惩罚
-            base_yawrate_penalty = -1.0
+            base_yawrate_penalty = -2
             yawrate_x = abs(action[1])
             yawrate_c = 0.4 # exp变量的系数
-            yawrate_penalty = base_yawrate_penalty*(np.exp(yawrate_c*yawrate_x)-1) # 400步下，每步角速度值最大时，该惩罚总为-147
+            yawrate_penalty = base_yawrate_penalty*(np.exp(yawrate_c*yawrate_x)-1) # 1500步下，每步角速度值最大时，该惩罚总为-147
             # # 计算角度偏移惩罚
             # # 计算当前角度（弧度）
             # current_angle = math.atan2(sin, cos)
@@ -274,6 +298,7 @@ class ROS_env:
             # angle_base_penalty = -1.0 # 假设角度偏差基础惩罚
             # angle_penalty = angle_base_penalty * (1 - math.cos(angle_diff)) / 2
             # 线速度奖励（线速度越大奖励越大)-角速度绝对值惩罚（绝对值越大惩罚越大)-障碍物距离惩罚（障碍物距离越小惩罚越大）
+            #print(f"Yawrate penalty: {yawrate_penalty} Obs penalty: {obs_penalty}")
             return yawrate_penalty + obs_penalty
 
     @staticmethod
