@@ -7,7 +7,6 @@ from statistics import mean
 import SAC.SAC_utils as utils
 from SAC.SAC_critic import DoubleQCritic as critic_model
 from SAC.SAC_actor import DiagGaussianActor as actor_model
-from torch.utils.tensorboard import SummaryWriter
 
 
 class SAC(object):
@@ -17,7 +16,6 @@ class SAC(object):
         self,
         state_dim,
         action_dim,
-        device,
         max_action,
         discount=0.99,
         init_temperature=0.1,
@@ -33,18 +31,20 @@ class SAC(object):
         learnable_temperature=True,
         save_every=0,
         load_model=False,
-        log_dist_and_hist = False,
-        save_directory=Path("src/drl_navigation_ros2/models/SAC"),
+        save_directory=Path("models/SAC"),
         model_name="SAC",
-        load_directory=Path("src/drl_navigation_ros2/models/SAC"),
-        robot_type="ysc",
+        load_directory=Path("models/SAC"),
     ):
         super().__init__()
 
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.action_range = (-max_action, max_action)
-        self.device = torch.device(device)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            print("GPU CUDA Ready")
+        else:
+            print("CPU CUDA Ready")
         self.discount = discount
         self.critic_tau = critic_tau
         self.actor_update_frequency = actor_update_frequency
@@ -53,29 +53,20 @@ class SAC(object):
         self.save_every = save_every
         self.model_name = model_name
         self.save_directory = save_directory
-        self.log_dist_and_hist = log_dist_and_hist
-
-        self.train_metrics_dict = { "train_critic/loss_av": [],
-                                    "train_actor/loss_av": [],
-                                    "train_actor/target_entropy_av": [],
-                                    "train_actor/entropy_av": [],
-                                    "train_alpha/loss_av": [],
-                                    "train_alpha/value_av": [],
-                                    "train/batch_reward_av": []
-        }
-
         self.critic = critic_model(
             obs_dim=self.state_dim,
             action_dim=action_dim,
             hidden_dim=1024,
             hidden_depth=2,
         ).to(self.device)
+        print("Initialized Critic Model")
         self.critic_target = critic_model(
             obs_dim=self.state_dim,
             action_dim=action_dim,
             hidden_dim=1024,
             hidden_depth=2,
         ).to(self.device)
+        print("Initialized Critic Target Model")
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         self.actor = actor_model(
@@ -85,6 +76,7 @@ class SAC(object):
             hidden_depth=2,
             log_std_bounds=[-5, 2],
         ).to(self.device)
+        print("Initialized Actor Model")
 
         if load_model:
             self.load(filename=model_name, directory=load_directory)
@@ -112,8 +104,7 @@ class SAC(object):
         self.actor.train(True)
         self.critic.train(True)
         self.step = 0
-    
-        self.writer = SummaryWriter()
+        print("Initialized SAC Model")
 
 
     def save(self, filename, directory):
@@ -127,13 +118,13 @@ class SAC(object):
 
     def load(self, filename, directory):
         self.actor.load_state_dict(
-            torch.load("%s/%s_actor.pth" % (directory, filename))
+            torch.load("%s/%s_actor.pth" % (directory, filename),map_location=self.device,weights_only=False)
         )
         self.critic.load_state_dict(
-            torch.load("%s/%s_critic.pth" % (directory, filename))
+            torch.load("%s/%s_critic.pth" % (directory, filename),map_location=self.device,weights_only=False)
         )
         self.critic_target.load_state_dict(
-            torch.load("%s/%s_critic_target.pth" % (directory, filename))
+            torch.load("%s/%s_critic_target.pth" % (directory, filename),map_location=self.device,weights_only=False)
         )
         print(f"Loaded weights from: {directory}")
 
@@ -142,11 +133,6 @@ class SAC(object):
             self.update(
                 replay_buffer=replay_buffer, step=self.step, batch_size=batch_size
             )
-
-        for key, value in self.train_metrics_dict.items():
-            if len(value):
-                self.writer.add_scalar(key, mean(value), self.step)
-            self.train_metrics_dict[key] = []
         self.step += 1
 
         if self.save_every > 0 and self.step % self.save_every == 0:
@@ -187,15 +173,11 @@ class SAC(object):
         critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(
             current_Q2, target_Q
         )
-        self.train_metrics_dict["train_critic/loss_av"].append(critic_loss.item())
-        self.writer.add_scalar("train_critic/loss", critic_loss, step)
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-        if self.log_dist_and_hist:
-            self.critic.log(self.writer, step)
 
     def update_actor_and_alpha(self, obs, step):
         dist = self.actor(obs)
@@ -205,29 +187,16 @@ class SAC(object):
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_prob - actor_Q).mean()
-        self.train_metrics_dict["train_actor/loss_av"].append(actor_loss.item())
-        self.train_metrics_dict["train_actor/target_entropy_av"].append(self.target_entropy)
-        self.train_metrics_dict["train_actor/entropy_av"].append(-log_prob.mean().item())
-        self.writer.add_scalar("train_actor/loss", actor_loss, step)
-        self.writer.add_scalar("train_actor/target_entropy", self.target_entropy, step)
-        self.writer.add_scalar("train_actor/entropy", -log_prob.mean(), step)
-
         # optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        if self.log_dist_and_hist:
-            self.actor.log(self.writer, step)
 
         if self.learnable_temperature:
             self.log_alpha_optimizer.zero_grad()
             alpha_loss = (
                 self.alpha * (-log_prob - self.target_entropy).detach()
             ).mean()
-            self.train_metrics_dict["train_alpha/loss_av"].append(alpha_loss.item())
-            self.train_metrics_dict["train_alpha/value_av"].append(self.alpha.item())
-            self.writer.add_scalar("train_alpha/loss", alpha_loss, step)
-            self.writer.add_scalar("train_alpha/value", self.alpha, step)
             alpha_loss.backward()
             self.log_alpha_optimizer.step()
 
@@ -245,8 +214,6 @@ class SAC(object):
         action = torch.Tensor(batch_actions).to(self.device)
         reward = torch.Tensor(batch_rewards).to(self.device)
         done = torch.Tensor(batch_dones).to(self.device)
-        self.train_metrics_dict["train/batch_reward_av"].append(batch_rewards.mean().item())
-        self.writer.add_scalar("train/batch_reward", batch_rewards.mean(), step)
 
         self.update_critic(state, action, reward, next_state, done, step)
 
@@ -282,6 +249,7 @@ class SAC(object):
     def prepare_state(self, latest_scan, distance, cos, sin, action):
         # latest_scan为前方180度范围内20个分区中离agent最近障碍物的距离
         state = latest_scan + [distance, cos, sin] + [action[0], action[1]]
+        #print(len(state))
         assert len(state) == self.state_dim
 
         return state
