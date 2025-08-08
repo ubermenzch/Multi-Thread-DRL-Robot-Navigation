@@ -1,0 +1,90 @@
+<!-- U形障碍2 (外接圆直径4米) -->
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='obstacle5'>
+    <pose>5.0 5.0 0.5 0 0 0</pose> 
+    <link name='link'>
+      <inertial>
+        <mass>15</mass>
+        <inertia>
+          <ixx>0.1</ixx> <ixy>0</ixy> <ixz>0</ixz>
+          <iyy>0.1</iyy> <iyz>0</iyz> <izz>0.1</izz>
+        </inertia>
+      </inertial>
+
+      <!-- 尺寸缩放比例: 4/2.0 = 2.0 -->
+      <visual name='visual_base'>
+        <pose>0 -1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>3.2 0.4 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+
+      <visual name='visual_left_arm'>
+        <pose>-1.4 0.2 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.4 2.0 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+
+      <visual name='visual_right_arm'>
+        <pose>1.4 0.2 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.4 2.0 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+
+      <collision name='collision_base'>
+        <pose>0 -1.0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>3.2 0.4 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name='collision_left_arm'>
+        <pose>-1.4 0.2 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.4 2.0 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name='collision_right_arm'>
+        <pose>1.4 0.2 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.4 2.0 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <static>false</static>
+  </model>
+</sdf>

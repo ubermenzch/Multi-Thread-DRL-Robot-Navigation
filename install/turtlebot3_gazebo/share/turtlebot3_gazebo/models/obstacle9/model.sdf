@@ -1,0 +1,93 @@
+<!-- U形障碍 (外接圆直径4米) -->
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='obstacle9'>
+    <static>false</static>
+    <pose>0 0 0.25 0 0 0</pose> 
+    <link name='link'>
+      <inertial>
+        <mass>100</mass>
+        <inertia>
+          <ixx>1.0</ixx> <ixy>0</ixy> <ixz>0</ixz>
+          <iyy>1.0</iyy> <iyz>0</iyz> <izz>1.0</izz>
+        </inertia>
+      </inertial>
+
+      <!-- 尺寸缩放比例: 4/2.72 ≈ 1.47 -->
+      <visual name='visual_base'>
+        <pose>0 -1.470 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.352 0.294 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <ambient>1 0 0 1</ambient>
+        </material>
+      </visual>
+
+      <visual name='visual_left_arm'>
+        <pose>-1.029 0.147 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.294 2.940 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Green</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <ambient>0 1 0 1</ambient>
+        </material>
+      </visual>
+
+      <visual name='visual_right_arm'>
+        <pose>1.029 0.147 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.294 2.940 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Blue</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+          <ambient>0 0 1 1</ambient>
+        </material>
+      </visual>
+
+      <collision name='collision_base'>
+        <pose>0 -1.470 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.352 0.294 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name='collision_left_arm'>
+        <pose>-1.029 0.147 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.294 2.940 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <collision name='collision_right_arm'>
+        <pose>1.029 0.147 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.294 2.940 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

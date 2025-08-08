@@ -1,0 +1,215 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='obstacle7'>
+    <pose>0 -5 0.5 0 0 0</pose> 
+    <link name='link'>
+      <inertial>
+        <mass>100</mass>
+        <inertia>
+          <ixx>25</ixx> <ixy>0</ixy> <ixz>0</ixz>
+          <iyy>25</iyy> <iyz>0</iyz> <izz>50</izz>
+        </inertia>
+      </inertial>
+
+      <!-- 修改为120度缺口 -->
+      <!-- 覆盖角度：240度（360-120） -->
+      <!-- 使用8个长方体覆盖240度（每个30度） -->
+      
+      <!-- Segment 1: 中心角度 45° -->
+      <visual name='visual_segment_1'>
+        <pose>1.414 1.414 0 0 0 0.7852</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_1'>
+        <pose>1.414 1.414 0 0 0 0.7852</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 2: 中心角度 75° -->
+      <visual name='visual_segment_2'>
+        <pose>0.518 1.933 0 0 0 1.3092</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_2'>
+        <pose>0.518 1.933 0 0 0 1.3092</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 3: 中心角度 105° -->
+      <visual name='visual_segment_3'>
+        <pose>-0.518 1.933 0 0 0 1.8322</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_3'>
+        <pose>-0.518 1.933 0 0 0 1.8322</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 4: 中心角度 135° -->
+      <visual name='visual_segment_4'>
+        <pose>-1.414 1.414 0 0 0 2.3562</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_4'>
+        <pose>-1.414 1.414 0 0 0 2.3562</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 5: 中心角度 165° -->
+      <visual name='visual_segment_5'>
+        <pose>-1.933 0.518 0 0 0 2.8792</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_5'>
+        <pose>-1.933 0.518 0 0 0 2.8792</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 6: 中心角度 195° -->
+      <visual name='visual_segment_6'>
+        <pose>-1.933 -0.518 0 0 0 3.4022</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_6'>
+        <pose>-1.933 -0.518 0 0 0 3.4022</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 7: 中心角度 225° -->
+      <visual name='visual_segment_7'>
+        <pose>-1.414 -1.414 0 0 0 3.9252</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_7'>
+        <pose>-1.414 -1.414 0 0 0 3.9252</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- Segment 8: 中心角度 255° -->
+      <visual name='visual_segment_8'>
+        <pose>-0.518 -1.933 0 0 0 4.4482</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/Orange</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      <collision name='collision_segment_8'>
+        <pose>-0.518 -1.933 0 0 0 4.4482</pose>
+        <geometry>
+          <box>
+            <size>0.21 1.053 1.0</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <!-- 移除Segment 9和10，创建120度缺口 -->
+      <!-- 缺口范围：285°到315°（30度） -->
+      <!-- 实际缺口：从255°到285°（30度）和315°到45°（30度） -->
+    </link>
+  </model>
+</sdf>

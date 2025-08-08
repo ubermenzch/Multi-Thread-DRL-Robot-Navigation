@@ -1,0 +1,70 @@
+<!-- X形障碍 (外接圆直径4米) -->
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='obstacle23'>
+    <link name='link'>
+      <inertial>
+        <mass>1000</mass>
+        <inertia>
+          <ixx>1000</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1000</iyy>
+          <iyz>0</iyz>
+          <izz>1000</izz>
+        </inertia>
+      </inertial>
+      
+      <!-- 尺寸缩放比例: 4/4.0 = 1.0 (已满足要求) -->
+      <collision name='collision1'>
+        <geometry>
+          <box>
+            <size>4.0 0.25 1</size>
+          </box>
+        </geometry>
+        <pose>0 0 0 0 0 0.5236</pose>
+      </collision>
+      <visual name='visual1'>
+        <geometry>
+          <box>
+            <size>4.0 0.25 1</size>
+          </box>
+        </geometry>
+        <pose>0 0 0 0 0 0.5236</pose>
+        <material>
+          <script>
+            <name>Gazebo/Blue</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      
+      <collision name='collision2'>
+        <geometry>
+          <box>
+            <size>4.0 0.25 1</size>
+          </box>
+        </geometry>
+        <pose>0 0 0 0 0 -0.5236</pose>
+      </collision>
+      <visual name='visual2'>
+        <geometry>
+          <box>
+            <size>4.0 0.25 1</size>
+          </box>
+        </geometry>
+        <pose>0 0 0 0 0 -0.5236</pose>
+        <material>
+          <script>
+            <name>Gazebo/Red</name>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+          </script>
+        </material>
+      </visual>
+      
+      <self_collide>false</self_collide>
+      <enable_wind>false</enable_wind>
+      <kinematic>false</kinematic>
+    </link>
+  </model>
+</sdf>
